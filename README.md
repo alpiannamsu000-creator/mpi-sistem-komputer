@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Komputer - MPI Kelas VII</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: '#0B132B',
+                        darkblue: '#1C2541',
+                        electric: '#3A506B',
+                        cyan: '#5BC0BE',
+                        emerald: '#6FFFE9',
+                        gold: '#FFD700',
+                        purple: '#7B2CBF'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arabic: ['Amiri', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- html2pdf for Reports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        /* Custom CSS & Animations */
+        body {
+            background: linear-gradient(135deg, #0B132B 0%, #1C2541 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .glass-panel {
+            background: rgba(28, 37, 65, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(91, 192, 190, 0.3);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-button {
+            background: linear-gradient(45deg, #3A506B, #5BC0BE);
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(91, 192, 190, 0.4);
+        }
+        
+        .glass-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(111, 255, 233, 0.6);
+            background: linear-gradient(45deg, #5BC0BE, #6FFFE9);
+            color: #0B132B;
+        }
+
+        .glass-button:disabled {
+            background: #3A506B;
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-float-delayed { animation: float 4s ease-in-out 2s infinite; }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px #5BC0BE; }
+            50% { box-shadow: 0 0 20px #6FFFE9, 0 0 30px #5BC0BE; }
+            100% { box-shadow: 0 0 5px #5BC0BE; }
+        }
+        .glow-effect { animation: pulse-glow 2s infinite; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-in { animation: slideIn 0.5s forwards; }
+
+        @keyframes dataFlow {
+            0% { stroke-dashoffset: 100; }
+            100% { stroke-dashoffset: 0; }
+        }
+        .data-line {
+            stroke-dasharray: 10;
+            animation: dataFlow 1s linear infinite;
+        }
+
+        /* UI Utilities */
+        .screen { display: none; min-height: 100vh; padding: 2rem 1rem; }
+        .screen.active { display: flex; flex-direction: column; }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 19, 43, 0.9);
+            display: none; justify-content: center; align-items: center;
+            z-index: 50; backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active { display: flex; }
+
+        /* Virtual Lab Specific */
+        .svg-component { transition: all 0.5s ease; cursor: pointer; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5)); }
+        .svg-component:hover { filter: drop-shadow(0 0 10px #6FFFE9) brightness(1.2); transform: scale(1.05); }
+        
+        /* State for dismantled PC (Optimized for responsiveness) */
+        .dismantled #mobo-svg { transform: translate(-15%, 10%) scale(0.8); }
+        .dismantled #cpu-svg { transform: translate(30%, -20%) scale(1.2); z-index: 10;}
+        .dismantled #ram-svg { transform: translate(30%, 0%) scale(1.2); }
+        .dismantled #ssd-svg { transform: translate(30%, 20%) scale(1.2); }
+        .dismantled #psu-svg { transform: translate(-20%, -20%) scale(0.9); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0B132B; }
+        ::-webkit-scrollbar-thumb { background: #3A506B; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5BC0BE; }
+
+        /* Presentation Mode */
+        body.presentation-mode { font-size: 120%; }
+        body.presentation-mode header { display: none; }
+        body.presentation-mode .presentation-hidden { display: none !important; }
+    </style>
+</head>
+<body class="text-white antialiased">
+
+    <!-- AUDIO CONTEXT (Lazy initialization to prevent browser warnings) -->
+    <script>
+        let audioCtx = null;
+        function playSound(type) {
+            if(!appState.settings.audio) return;
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            if (type === 'click') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'correct') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+    </script>
+
+    <!-- GLOBAL MODAL (For Alerts/Messages) -->
+    <div id="global-modal" class="modal-overlay">
+        <div class="glass-panel p-8 max-w-md w-full text-center relative mx-4 slide-in">
+            <h2 id="g-modal-title" class="text-2xl font-bold text-emerald mb-4">Pesan</h2>
+            <p id="g-modal-message" class="mb-6 text-gray-300">Isi pesan...</p>
+            <button onclick="closeGlobalModal()" class="glass-button px-6 py-2 rounded-full font-bold w-full">MENGERTI</button>
+        </div>
+    </div>
+
+    <!-- GLOBAL CONFIRM MODAL -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="glass-panel p-8 max-w-md w-full text-center relative mx-4 slide-in">
+            <h2 id="c-modal-title" class="text-2xl font-bold text-gold mb-4">Konfirmasi</h2>
+            <p id="c-modal-message" class="mb-6 text-gray-300">Apakah Anda yakin?</p>
+            <div class="flex gap-4">
+                <button onclick="handleConfirm(false)" class="glass-panel px-6 py-2 rounded-full font-bold w-full hover:bg-red-900/50 hover:text-red-400 transition text-gray-300">TIDAK</button>
+                <button onclick="handleConfirm(true)" class="glass-button px-6 py-2 rounded-full font-bold w-full text-navy">YA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING INFO MODAL (Developer & Tujuan) -->
+    <div id="info-modal" class="modal-overlay">
+        <div class="glass-panel p-8 max-w-2xl w-full relative mx-4 max-h-[90vh] overflow-y-auto slide-in">
+            <button onclick="closeInfoModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+            <div id="info-content"></div>
+        </div>
+    </div>
+
+    <!-- 1. SPLASH SCREEN -->
+    <div id="screen-splash" class="screen active justify-center items-center">
+        <div class="text-center animate-float">
+            <!-- Abstract CPU SVG -->
+            <svg width="120" height="120" viewBox="0 0 100 100" class="mx-auto mb-6 glow-effect rounded-2xl">
+                <rect x="10" y="10" width="80" height="80" rx="10" fill="#1C2541" stroke="#5BC0BE" stroke-width="4"/>
+                <rect x="25" y="25" width="50" height="50" rx="5" fill="#3A506B"/>
+                <circle cx="50" cy="50" r="15" fill="#6FFFE9" opacity="0.8"/>
+                <!-- Pins -->
+                <path d="M 20 10 L 20 5 M 40 10 L 40 5 M 60 10 L 60 5 M 80 10 L 80 5" stroke="#FFD700" stroke-width="3"/>
+                <path d="M 20 90 L 20 95 M 40 90 L 40 95 M 60 90 L 60 95 M 80 90 L 80 95" stroke="#FFD700" stroke-width="3"/>
+            </svg>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald to-cyan tracking-wider">SISTEM KOMPUTER</h1>
+            <p class="text-xl mt-2 text-gray-300">Informatika Kelas VII</p>
+            <div class="mt-8 w-48 h-2 bg-darkblue rounded-full mx-auto overflow-hidden">
+                <div class="h-full bg-emerald w-full animate-[slideIn_1.5s_ease-out]"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. COVER SCREEN -->
+    <div id="screen-cover" class="screen justify-center items-center">
+        <div class="max-w-6xl w-full grid md:grid-cols-2 gap-12 items-center">
+            <div class="space-y-6 text-center md:text-left slide-in">
+                <div class="flex gap-3 justify-center md:justify-start">
+                    <span class="bg-purple text-white px-3 py-1 rounded-full text-sm font-bold">INFORMATIKA</span>
+                    <span class="bg-electric text-emerald px-3 py-1 rounded-full text-sm font-bold border border-emerald">KELAS VII</span>
+                </div>
+                <h1 class="text-5xl md:text-7xl font-extrabold leading-tight">
+                    SISTEM <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald to-cyan">KOMPUTER</span>
+                </h1>
+                <p class="text-xl text-gray-300 italic">"Yuk, Jelajahi Rahasia di Balik Komputer!"</p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 pt-6 justify-center md:justify-start">
+                    <button onclick="nav('login')" class="glass-button px-8 py-4 rounded-full font-bold text-lg shadow-[0_0_15px_#5BC0BE]">MULAI BELAJAR</button>
+                    <div class="flex gap-2 justify-center">
+                        <button onclick="showDevInfo()" class="glass-panel px-4 py-2 rounded-full text-sm hover:bg-electric transition">👨‍💻 Pengembang</button>
+                        <button onclick="showObjectives()" class="glass-panel px-4 py-2 rounded-full text-sm hover:bg-electric transition">🎯 Tujuan</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="relative h-64 md:h-96 w-full flex justify-center items-center">
+                <!-- 3D-like Composition using SVGs -->
+                <div class="absolute animate-float">
+                     <svg width="200" height="200" viewBox="0 0 200 200">
+                        <!-- Monitor -->
+                        <rect x="20" y="40" width="160" height="100" rx="10" fill="#1C2541" stroke="#5BC0BE" stroke-width="3"/>
+                        <rect x="30" y="50" width="140" height="80" fill="#0B132B"/>
+                        <!-- Data lines inside monitor -->
+                        <path d="M 40 70 L 160 70 M 40 90 L 100 90 M 40 110 L 130 110" stroke="#6FFFE9" stroke-width="2" class="data-line"/>
+                        <!-- Stand -->
+                        <path d="M 90 140 L 110 140 L 120 170 L 80 170 Z" fill="#3A506B"/>
+                        <rect x="70" y="170" width="60" height="10" rx="3" fill="#5BC0BE"/>
+                     </svg>
+                </div>
+                <div class="absolute top-0 right-10 animate-float-delayed">
+                    <!-- CPU Chip floating -->
+                    <svg width="80" height="80" viewBox="0 0 100 100" class="glow-effect rounded-lg">
+                        <rect x="10" y="10" width="80" height="80" rx="5" fill="#7B2CBF" stroke="#FFD700" stroke-width="2"/>
+                        <text x="50" y="55" font-family="Arial" font-size="20" fill="white" text-anchor="middle" font-weight="bold">CPU</text>
+                    </svg>
+                </div>
+                <div class="absolute bottom-0 left-10 animate-float">
+                    <!-- RAM floating -->
+                    <svg width="100" height="40" viewBox="0 0 120 40">
+                        <rect x="5" y="5" width="110" height="30" fill="#2E7D32" stroke="#4CAF50"/>
+                        <rect x="15" y="10" width="20" height="15" fill="#111"/>
+                        <rect x="45" y="10" width="20" height="15" fill="#111"/>
+                        <rect x="75" y="10" width="20" height="15" fill="#111"/>
+                        <!-- Gold pins -->
+                        <rect x="10" y="32" width="100" height="5" fill="#FFD700"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. LOGIN & IDENTITAS -->
+    <div id="screen-login" class="screen justify-center items-center">
+        <div class="glass-panel p-8 max-w-md w-full slide-in">
+            <h2 class="text-3xl font-bold mb-6 text-center text-emerald">Identitas Penjelajah</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm mb-1 text-gray-300">Nama Lengkap</label>
+                    <input type="text" id="input-name" class="w-full bg-darkblue border border-electric rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald" placeholder="Masukkan namamu...">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1 text-gray-300">Kelas</label>
+                    <select id="input-class" class="w-full bg-darkblue border border-electric rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald appearance-none">
+                        <option value="">Pilih Kelas</option>
+                        <option value="VII">VII</option>
+                    </select>
+                </div>
+                <button onclick="handleLogin()" class="glass-button w-full py-3 rounded-lg font-bold mt-4 text-lg">LANJUTKAN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ONBOARDING (PANDUAN) -->
+    <div id="screen-onboarding" class="screen justify-center items-center">
+        <div class="glass-panel p-8 max-w-2xl w-full text-center slide-in relative">
+            <div id="ob-slides">
+                <!-- Slide 1 -->
+                <div class="ob-slide block">
+                    <h2 class="text-3xl font-bold text-emerald mb-4">Selamat Datang, <span id="ob-name"></span>!</h2>
+                    <p class="text-lg text-gray-300">Kamu kini berada di Laboratorium Komputer Virtual MTs. Misi kita adalah menjelajahi rahasia di balik cara kerja komputer yang luar biasa!</p>
+                    <div class="my-6 flex justify-center text-6xl">🚀</div>
+                </div>
+                <!-- Slide 2 -->
+                <div class="ob-slide hidden">
+                    <h2 class="text-3xl font-bold text-emerald mb-4">Tahapan Misi</h2>
+                    <div class="flex justify-around items-center my-6">
+                        <div class="text-center"><div class="w-16 h-16 rounded-full bg-cyan flex items-center justify-center text-3xl mx-auto mb-2 text-navy">📖</div><p>1. Belajar</p></div>
+                        <div class="text-emerald">➔</div>
+                        <div class="text-center"><div class="w-16 h-16 rounded-full bg-gold flex items-center justify-center text-3xl mx-auto mb-2 text-navy">🎮</div><p>2. Bermain</p></div>
+                        <div class="text-emerald">➔</div>
+                        <div class="text-center"><div class="w-16 h-16 rounded-full bg-purple flex items-center justify-center text-3xl mx-auto mb-2 text-white">📝</div><p>3. Berlatih</p></div>
+                    </div>
+                    <p class="text-sm text-gray-300">Selesaikan setiap tahap secara berurutan untuk membuka menu berikutnya.</p>
+                </div>
+                <!-- Slide 3 -->
+                <div class="ob-slide hidden">
+                    <h2 class="text-3xl font-bold text-emerald mb-4">Kumpulkan Penghargaan!</h2>
+                    <p class="text-lg text-gray-300 mb-4">Dapatkan <span class="text-gold font-bold">Poin</span>, <span class="text-gold font-bold">Bintang</span>, dan <span class="text-emerald font-bold">Badge Pencapaian</span> dari setiap misi yang kamu selesaikan dengan baik.</p>
+                    <p class="text-sm italic text-cyan">"Bacalah dengan (menyebut) nama Tuhanmu yang menciptakan..." (QS. Al-Alaq: 1). Mari mulai belajar!</p>
+                </div>
+            </div>
+            <div class="flex justify-between mt-8 items-center">
+                <div id="ob-dots" class="flex gap-2">
+                    <div class="w-3 h-3 rounded-full bg-emerald"></div>
+                    <div class="w-3 h-3 rounded-full bg-gray-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-gray-500"></div>
+                </div>
+                <button onclick="nextOnboarding()" class="glass-button px-6 py-2 rounded-full font-bold" id="ob-btn">LANJUT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. DASHBOARD UTAMA -->
+    <div id="screen-dashboard" class="screen">
+        <!-- Top Nav -->
+        <header class="flex justify-between items-center bg-darkblue/50 backdrop-blur p-4 rounded-2xl mb-6 border border-electric">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-cyan to-purple flex items-center justify-center text-xl font-bold border-2 border-white shadow-lg" id="dash-avatar">A</div>
+                <div>
+                    <h3 class="font-bold text-lg" id="dash-name">Siswa</h3>
+                    <p class="text-sm text-gray-400" id="dash-class">Kelas VII</p>
+                </div>
+            </div>
+            <div class="flex gap-4 items-center">
+                <button onclick="toggleAudio()" class="text-2xl" id="btn-audio">🔊</button>
+                <button onclick="togglePresentation()" class="text-2xl presentation-hidden" title="Mode Presentasi">📽️</button>
+                <div class="glass-panel px-4 py-2 flex items-center gap-2">
+                    <span class="text-gold text-xl">⭐</span> <span id="dash-stars" class="font-bold">0</span>
+                </div>
+                <div class="glass-panel px-4 py-2 flex items-center gap-2">
+                    <span class="text-emerald text-xl">🏆</span> <span id="dash-points" class="font-bold">0</span> Pt
+                </div>
+            </div>
+        </header>
+
+        <!-- KBC & Quran Highlight -->
+        <div class="glass-panel p-4 mb-6 border-l-4 border-l-purple flex gap-4 items-center cursor-pointer hover:bg-darkblue transition presentation-hidden" onclick="showKBCModal()">
+            <div class="text-4xl">🕌</div>
+            <div>
+                <h4 class="font-bold text-emerald">Pojok Hikmah & Karakter (KBC)</h4>
+                <p class="text-sm text-gray-300">Klik untuk melihat integrasi nilai Islam dalam mempelajari Sistem Komputer.</p>
+            </div>
+        </div>
+
+        <!-- Main Cards -->
+        <div class="grid md:grid-cols-3 gap-6 flex-grow">
+            <!-- Card Belajar -->
+            <div onclick="nav('learning')" class="glass-panel p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:scale-105 transition transform relative group overflow-hidden">
+                <div class="absolute inset-0 bg-cyan/10 opacity-0 group-hover:opacity-100 transition"></div>
+                <div class="text-6xl mb-4">📖</div>
+                <h2 class="text-2xl font-bold text-cyan mb-2">BELAJAR</h2>
+                <p class="text-sm text-gray-300 mb-4">Jelajahi 6 Modul dan Virtual Lab</p>
+                <div class="w-full bg-darkblue rounded-full h-2">
+                    <div id="prog-belajar" class="bg-cyan h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <span class="mt-2 text-xs font-bold text-emerald">TERBUKA</span>
+            </div>
+
+            <!-- Card Bermain -->
+            <div onclick="checkLock('bermain')" class="glass-panel p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:scale-105 transition transform relative" id="card-bermain">
+                <div id="lock-bermain" class="absolute inset-0 bg-navy/80 backdrop-blur-[2px] flex items-center justify-center rounded-xl z-10">
+                    <div class="text-4xl text-gray-400">🔒</div>
+                </div>
+                <div class="text-6xl mb-4">🎮</div>
+                <h2 class="text-2xl font-bold text-gold mb-2">BERMAIN</h2>
+                <p class="text-sm text-gray-300 mb-4" id="dash-game-text">11 Tantangan Interaktif</p>
+                <div class="w-full bg-darkblue rounded-full h-2">
+                    <div id="prog-bermain" class="bg-gold h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <span class="mt-2 text-xs font-bold text-gray-400" id="status-bermain">TERKUNCI</span>
+            </div>
+
+            <!-- Card Berlatih -->
+            <div onclick="checkLock('berlatih')" class="glass-panel p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:scale-105 transition transform relative" id="card-berlatih">
+                <div id="lock-berlatih" class="absolute inset-0 bg-navy/80 backdrop-blur-[2px] flex items-center justify-center rounded-xl z-10">
+                    <div class="text-4xl text-gray-400">🔒</div>
+                </div>
+                <div class="text-6xl mb-4">📝</div>
+                <h2 class="text-2xl font-bold text-purple mb-2">BERLATIH</h2>
+                <p class="text-sm text-gray-300 mb-4">Evaluasi Pemahaman (HOTS)</p>
+                <div class="w-full bg-darkblue rounded-full h-2"></div>
+                <span class="mt-2 text-xs font-bold text-gray-400" id="status-berlatih">TERKUNCI</span>
+            </div>
+        </div>
+        
+        <div class="mt-6 flex justify-center presentation-hidden">
+             <button onclick="nav('report')" class="glass-button px-6 py-3 rounded-full font-bold flex gap-2 items-center" id="btn-report" style="display:none;">
+                 📄 LIHAT LAPORAN HASIL BELAJAR
+             </button>
+        </div>
+    </div>
+
+    <!-- 6. MENU BELAJAR (MODUL & VIRTUAL LAB) -->
+    <div id="screen-learning" class="screen">
+        <header class="flex justify-between items-center mb-6">
+            <button onclick="nav('dashboard')" class="glass-panel px-4 py-2 rounded-lg hover:bg-electric">⬅ Kembali</button>
+            <h2 class="text-2xl font-bold text-cyan">Ruang Belajar</h2>
+            <button onclick="showVirtualLab()" class="glass-button px-4 py-2 rounded-lg font-bold flex gap-2 items-center pulse-glow">
+                🔬 VIRTUAL LAB
+            </button>
+        </header>
+
+        <div class="flex flex-col md:flex-row gap-6 h-[75vh]">
+            <!-- Sidebar Modul List -->
+            <div class="w-full md:w-1/3 lg:w-1/4 glass-panel p-4 overflow-y-auto presentation-hidden">
+                <h3 class="font-bold text-lg mb-4 text-emerald border-b border-electric pb-2">Daftar Modul</h3>
+                <ul id="module-list" class="space-y-2">
+                    <!-- Injected by JS -->
+                </ul>
+            </div>
+            
+            <!-- Content Area -->
+            <div class="w-full md:w-2/3 lg:w-3/4 glass-panel p-6 overflow-y-auto relative" id="module-content-area">
+                <div id="module-display" class="slide-in">
+                    <!-- Content injected here -->
+                    <div class="text-center text-gray-400 mt-20">Pilih modul di samping untuk mulai belajar.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIRTUAL LAB MODAL FULLSCREEN -->
+    <div id="vlab-modal" class="modal-overlay">
+        <div class="glass-panel w-[95%] h-[95%] relative flex flex-col slide-in">
+            <header class="p-4 border-b border-electric flex justify-between items-center bg-darkblue/80 rounded-t-xl">
+                <h2 class="text-2xl font-bold text-emerald flex items-center gap-2">🔬 VIRTUAL COMPUTER LAB</h2>
+                <div class="flex gap-2">
+                    <button onclick="toggleDismantle()" id="btn-dismantle" class="glass-button px-4 py-1 rounded">Bongkar Komputer</button>
+                    <button onclick="closeVirtualLab()" class="glass-panel px-4 py-1 rounded hover:bg-red-900 text-red-400">Tutup</button>
+                </div>
+            </header>
+            
+            <div class="flex-grow flex flex-col md:flex-row relative overflow-y-auto md:overflow-hidden bg-navy">
+                <!-- Lab Workspace (SVG Area) -->
+                <div class="w-full md:w-2/3 h-[50vh] md:h-full flex justify-center items-center relative flex-shrink-0" id="vlab-workspace">
+                    <!-- Central PC Container (Responsive aspect-ratio) -->
+                    <div id="pc-container" class="relative w-full max-w-[400px] aspect-square transition-all duration-700">
+                        
+                        <!-- Casing Background -->
+                        <svg class="absolute inset-0 w-full h-full" viewBox="0 0 400 400">
+                            <rect x="20" y="20" width="360" height="360" rx="10" fill="#111" stroke="#333" stroke-width="5"/>
+                            <rect x="30" y="30" width="340" height="340" fill="#1a1a2e"/>
+                        </svg>
+
+                        <!-- Motherboard -->
+                        <div id="mobo-svg" class="absolute top-[10%] left-[10%] w-[70%] h-[70%] svg-component group" onclick="showComponentInfo('Motherboard')">
+                            <svg viewBox="0 0 280 280" class="w-full h-full">
+                                <rect width="280" height="280" fill="#0f380f" stroke="#5BC0BE" stroke-width="2"/>
+                                <!-- CPU Socket -->
+                                <rect x="100" y="50" width="80" height="80" fill="#222" stroke="#555"/>
+                                <!-- RAM Slots -->
+                                <rect x="200" y="40" width="15" height="120" fill="#111" stroke="#444"/>
+                                <rect x="225" y="40" width="15" height="120" fill="#111" stroke="#444"/>
+                                <!-- PCIe -->
+                                <rect x="40" y="180" width="150" height="15" fill="#111" stroke="#444"/>
+                                <!-- Chipset -->
+                                <rect x="180" y="200" width="50" height="50" fill="#333"/>
+                                <!-- Traces (Decorative) -->
+                                <path d="M 20 20 L 80 20 L 80 80 M 20 50 L 50 50 L 50 100" stroke="#5BC0BE" fill="none" opacity="0.5"/>
+                            </svg>
+                            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-navy px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-cyan">Motherboard</div>
+                        </div>
+
+                        <!-- CPU (Initially inside Mobo socket) -->
+                        <div id="cpu-svg" class="absolute top-[21.25%] left-[33.75%] w-[12.5%] h-[12.5%] svg-component group" onclick="showComponentInfo('Processor (CPU)')">
+                            <svg viewBox="0 0 50 50" class="w-full h-full">
+                                <rect width="50" height="50" fill="#ddd" stroke="#999" stroke-width="2" rx="2"/>
+                                <rect x="10" y="10" width="30" height="30" fill="#7B2CBF"/>
+                                <text x="25" y="28" font-size="10" fill="white" text-anchor="middle" font-weight="bold">CPU</text>
+                            </svg>
+                            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-navy px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-cyan z-20">Processor</div>
+                        </div>
+
+                        <!-- RAM (Initially in slots) -->
+                        <div id="ram-svg" class="absolute top-[15%] left-[53.75%] w-[3.75%] h-[25%] svg-component group" onclick="showComponentInfo('RAM (Memory)')">
+                            <svg viewBox="0 0 15 100" class="w-full h-full">
+                                <rect width="15" height="100" fill="#2E7D32"/>
+                                <rect x="2" y="10" width="11" height="15" fill="#111"/>
+                                <rect x="2" y="35" width="11" height="15" fill="#111"/>
+                                <rect x="2" y="60" width="11" height="15" fill="#111"/>
+                                <rect x="0" y="90" width="15" height="10" fill="#FFD700"/>
+                            </svg>
+                            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-navy px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-cyan">RAM</div>
+                        </div>
+
+                        <!-- Storage / SSD (Bottom area) -->
+                        <div id="ssd-svg" class="absolute bottom-[7.5%] right-[10%] w-[20%] h-[30%] svg-component group" onclick="showComponentInfo('SSD (Penyimpanan)')">
+                            <svg viewBox="0 0 80 120" class="w-full h-full">
+                                <rect width="80" height="120" fill="#333" rx="5" stroke="#555"/>
+                                <rect x="10" y="10" width="60" height="30" fill="#444"/>
+                                <text x="40" y="30" font-size="12" fill="#5BC0BE" text-anchor="middle" font-weight="bold">SSD</text>
+                                <circle cx="40" cy="80" r="20" fill="none" stroke="#555" stroke-width="2"/>
+                            </svg>
+                             <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-navy px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-cyan">SSD</div>
+                        </div>
+
+                        <!-- Power Supply -->
+                        <div id="psu-svg" class="absolute top-[7.5%] right-[7.5%] w-[25%] h-[20%] svg-component group" onclick="showComponentInfo('Power Supply')">
+                            <svg viewBox="0 0 100 80" class="w-full h-full">
+                                <rect width="100" height="80" fill="#222" stroke="#444" stroke-width="2"/>
+                                <circle cx="50" cy="40" r="30" fill="#111"/>
+                                <!-- Fan blades -->
+                                <path d="M 50 40 L 50 10 M 50 40 L 80 55 M 50 40 L 20 55" stroke="#333" stroke-width="4"/>
+                                <text x="15" y="15" font-size="8" fill="red">AC/DC</text>
+                            </svg>
+                            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-navy px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition whitespace-nowrap border border-cyan">Power Supply</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Panel -->
+                <div class="w-full md:w-1/3 bg-darkblue/50 p-6 md:border-l border-t md:border-t-0 border-electric overflow-y-auto flex-shrink-0 md:flex-shrink" id="vlab-info">
+                    <div class="text-center text-gray-400 mt-20" id="vlab-default-msg">
+                        <div class="text-4xl mb-4">👈</div>
+                        Klik komponen pada komputer untuk melihat penjelasan detail.
+                    </div>
+                    <div id="vlab-details" class="hidden slide-in">
+                        <h3 id="vc-title" class="text-2xl font-bold text-emerald mb-2">Nama</h3>
+                        <div id="vc-img-placeholder" class="w-full h-32 bg-navy rounded-lg mb-4 flex justify-center items-center">IMG</div>
+                        <p id="vc-desc" class="text-gray-200 mb-4 text-sm"></p>
+                        <h4 class="font-bold text-cyan mb-1">Fungsi Utama:</h4>
+                        <ul id="vc-func" class="list-disc pl-5 text-sm text-gray-300 mb-4 space-y-1"></ul>
+                        <div class="bg-purple/20 p-3 rounded-lg border border-purple">
+                            <h4 class="font-bold text-gold text-sm mb-1">Konteks Gorontalo:</h4>
+                            <p id="vc-context" class="text-xs text-gray-300"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. MENU BERMAIN (GAMES) -->
+    <div id="screen-gaming" class="screen">
+        <header class="flex justify-between items-center mb-6">
+            <button onclick="nav('dashboard')" class="glass-panel px-4 py-2 rounded-lg hover:bg-electric">⬅ Kembali</button>
+            <h2 class="text-2xl font-bold text-gold">Arena Bermain</h2>
+            <div class="glass-panel px-4 py-1 rounded text-gold font-bold">Misi: <span id="game-progress-text">0/11</span></div>
+        </header>
+
+        <div id="game-selection" class="grid grid-cols-2 md:grid-cols-5 gap-4 slide-in">
+            <!-- Injected by JS -->
+        </div>
+
+        <div id="game-play-area" class="hidden glass-panel p-6 md:p-10 max-w-4xl mx-auto w-full mt-6 flex-grow flex flex-col">
+            <div class="flex justify-between text-sm text-gray-400 mb-4 border-b border-electric pb-2">
+                <span id="gp-title" class="font-bold text-emerald">Judul Game</span>
+                <span id="gp-type">Tipe</span>
+            </div>
+            
+            <div class="bg-darkblue p-4 rounded-lg mb-6 border border-cyan/30 shadow-inner text-gray-200 italic" id="gp-stimulus">
+                <!-- Stimulus context here -->
+            </div>
+
+            <h3 class="text-xl font-bold mb-6 text-center" id="gp-question">Pertanyaan?</h3>
+
+            <!-- Dynamic Game Interface Container -->
+            <div id="gp-interface" class="flex-grow flex flex-col justify-center gap-4">
+                <!-- Buttons/Matching elements injected here -->
+            </div>
+
+            <div id="gp-feedback" class="mt-6 text-center hidden font-bold text-lg p-4 rounded-lg"></div>
+        </div>
+    </div>
+
+    <!-- 8. MENU BERLATIH (ASESMEN) -->
+    <div id="screen-assessment" class="screen">
+        <header class="flex justify-between items-center mb-6">
+            <button onclick="confirmExitAssessment()" class="glass-panel px-4 py-2 rounded-lg hover:bg-electric">⬅ Keluar</button>
+            <h2 class="text-2xl font-bold text-purple">Evaluasi Akhir</h2>
+            <div class="glass-panel px-4 py-1 rounded font-bold">Soal: <span id="quiz-progress-text">1/10</span></div>
+        </header>
+
+        <div id="quiz-intro" class="glass-panel p-10 max-w-2xl mx-auto text-center slide-in">
+            <div class="text-6xl mb-6">📝</div>
+            <h3 class="text-2xl font-bold text-emerald mb-4">Siap Menguji Pengetahuanmu?</h3>
+            <p class="text-gray-300 mb-6">Terdapat 10 soal (Dasar, Sedang, HOTS) berdasarkan materi dan studi kasus nyata. Kerjakan dengan jujur dan teliti.</p>
+            <p class="text-sm italic text-cyan mb-8">"Katakanlah: 'Adakah sama orang-orang yang mengetahui dengan orang-orang yang tidak mengetahui?'" (QS. Az-Zumar: 9)</p>
+            <button onclick="startQuiz()" class="glass-button px-8 py-3 rounded-full font-bold text-lg">MULAI EVALUASI</button>
+        </div>
+
+        <div id="quiz-play-area" class="hidden glass-panel p-6 md:p-10 max-w-4xl mx-auto w-full flex-grow flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <span id="qz-level" class="px-3 py-1 rounded text-xs font-bold bg-gray-700">Level</span>
+                <span id="qz-points" class="text-gold font-bold text-sm">Points</span>
+            </div>
+            
+            <div class="w-full bg-darkblue rounded-full h-1 mb-6">
+                <div id="qz-bar" class="bg-purple h-1 rounded-full" style="width: 10%"></div>
+            </div>
+
+            <div class="bg-darkblue p-4 rounded-lg mb-6 border border-purple/30 text-gray-200" id="qz-stimulus">
+                <!-- Stimulus -->
+            </div>
+
+            <h3 class="text-xl font-bold mb-6" id="qz-question">Pertanyaan?</h3>
+
+            <div id="qz-options" class="grid gap-3">
+                <!-- Options injected here -->
+            </div>
+        </div>
+
+        <div id="quiz-result" class="hidden glass-panel p-10 max-w-2xl mx-auto text-center slide-in">
+             <h3 class="text-3xl font-bold text-emerald mb-2">Evaluasi Selesai!</h3>
+             <p class="text-gray-300 mb-6">Alhamdulillah, kamu telah menyelesaikan seluruh misi.</p>
+             
+             <div class="w-48 h-48 mx-auto rounded-full border-8 border-darkblue flex items-center justify-center flex-col mb-6 bg-navy relative">
+                 <svg class="absolute inset-0 w-full h-full -rotate-90">
+                     <circle cx="96" cy="96" r="88" fill="none" stroke="#5BC0BE" stroke-width="8" id="score-circle" stroke-dasharray="553" stroke-dashoffset="553" class="transition-all duration-1000 ease-out"></circle>
+                 </svg>
+                 <span class="text-5xl font-extrabold text-white z-10" id="qz-final-score">0</span>
+                 <span class="text-sm text-gray-400 z-10">Poin</span>
+             </div>
+
+             <h4 class="text-2xl font-bold mb-2" id="qz-predikat">Sangat Baik</h4>
+             <p class="text-sm text-gray-400 mb-8" id="qz-feedback-msg"></p>
+
+             <button onclick="finishAssessment()" class="glass-button px-8 py-3 rounded-full font-bold text-lg w-full">LIHAT LAPORAN LENGKAP</button>
+        </div>
+    </div>
+
+    <!-- REPORT AREA (Hidden for PDF generation) -->
+    <div id="report-container" class="hidden bg-white text-black p-10 w-[210mm] min-h-[297mm] mx-auto absolute top-0 left-[-9999px]">
+        <div class="border-b-4 border-navy pb-4 mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-black text-navy uppercase">Laporan Hasil Belajar</h1>
+                <h2 class="text-lg font-bold text-electric">Media Pembelajaran Interaktif Informatika</h2>
+                <p class="text-sm text-gray-600">Materi: Sistem Komputer Kelas VII</p>
+            </div>
+            <div class="text-right">
+                <p class="font-bold text-navy" id="rep-date">Tgl</p>
+                <p class="text-xs text-gray-500">Guru: Alpian Usman, S.Pd., M.Si.</p>
+                <p class="text-xs text-gray-500">MTs Muhammadiyah SMART Gorontalo</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8 bg-gray-100 p-4 rounded-lg">
+            <div><span class="text-gray-500 text-sm">Nama Siswa:</span><br><span class="font-bold text-lg" id="rep-name">Nama</span></div>
+            <div><span class="text-gray-500 text-sm">Kelas:</span><br><span class="font-bold text-lg" id="rep-class">Kelas</span></div>
+        </div>
+
+        <h3 class="font-bold text-navy border-b border-gray-300 mb-4 pb-1">1. Rekapitulasi Penyelesaian Modul (Belajar)</h3>
+        <ul class="list-disc pl-5 mb-6 text-sm" id="rep-modules"></ul>
+
+        <h3 class="font-bold text-navy border-b border-gray-300 mb-4 pb-1">2. Performa Permainan Edukasi (Bermain)</h3>
+        <p class="text-sm mb-2">Total Game Diselesaikan: <span id="rep-games-done" class="font-bold">11/11</span></p>
+        <p class="text-sm mb-6">Akurasi Rata-rata: <span id="rep-games-acc" class="font-bold">100%</span></p>
+
+        <h3 class="font-bold text-navy border-b border-gray-300 mb-4 pb-1">3. Hasil Evaluasi Sumatif (Berlatih)</h3>
+        <div class="flex justify-between items-center mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div>
+                <p class="text-sm text-gray-600">Skor Akhir:</p>
+                <p class="text-4xl font-black text-navy" id="rep-score">100</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-600">Predikat:</p>
+                <p class="text-2xl font-bold text-blue-600" id="rep-pred">Sangat Baik</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-2 text-center text-xs mb-8">
+            <div class="bg-gray-100 p-2 rounded">Level Dasar<br><span class="font-bold text-sm" id="rep-l1"></span></div>
+            <div class="bg-gray-100 p-2 rounded">Level Sedang<br><span class="font-bold text-sm" id="rep-l2"></span></div>
+            <div class="bg-gray-100 p-2 rounded">Level HOTS<br><span class="font-bold text-sm" id="rep-l3"></span></div>
+        </div>
+
+        <h3 class="font-bold text-navy border-b border-gray-300 mb-4 pb-1">4. Catatan Karakter & Kurikulum Berbasis Cinta (KBC)</h3>
+        <p class="text-sm italic text-gray-700 bg-gray-50 p-4 rounded border-l-4 border-green-500 mb-8" id="rep-kbc">
+            Siswa telah menunjukkan pemahaman terkait tanggung jawab penggunaan teknologi sesuai dengan nilai-nilai Islam dan kearifan lokal.
+        </p>
+        
+        <div class="mt-12 text-sm text-center text-gray-500 pt-4 border-t border-gray-300">
+            Dokumen ini dihasilkan secara otomatis oleh sistem MPI.
+        </div>
+    </div>
+
+    <!-- REPORT SCREEN (UI) -->
+    <div id="screen-report" class="screen justify-center items-center">
+        <div class="glass-panel p-8 max-w-lg w-full text-center slide-in">
+            <div class="text-6xl mb-4 text-emerald">🏆</div>
+            <h2 class="text-3xl font-bold mb-2">Laporan Selesai!</h2>
+            <p class="text-gray-300 mb-8">Selamat! Kamu telah menyelesaikan seluruh rangkaian pembelajaran Sistem Komputer.</p>
+            
+            <div class="space-y-4">
+                <button onclick="downloadPDF()" class="glass-button w-full py-3 rounded-lg font-bold flex justify-center items-center gap-2 text-lg">
+                    📥 UNDUH PDF LAPORAN
+                </button>
+                <button onclick="nav('dashboard')" class="w-full py-3 rounded-lg font-bold border border-electric hover:bg-darkblue transition">
+                    KEMBALI KE DASHBOARD
+                </button>
+                <button onclick="resetData()" class="w-full py-2 text-sm text-red-400 hover:text-red-300 mt-4">
+                    Hapus Data & Mulai Ulang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KBC MODAL -->
+    <div id="kbc-modal" class="modal-overlay">
+         <div class="glass-panel p-8 max-w-2xl w-full relative mx-4 max-h-[90vh] overflow-y-auto slide-in">
+            <button onclick="closeKbcModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-emerald mb-4 border-b border-electric pb-2">Hikmah & Kurikulum Berbasis Cinta</h2>
+            
+            <div class="space-y-6 mt-4">
+                <div>
+                    <h3 class="font-bold text-cyan mb-2">1. Cinta Kepada Allah (Literasi Digital)</h3>
+                    <p class="font-arabic text-2xl text-right mb-2 text-gold" dir="rtl">ٱقۡرَأۡ بِٱسۡمِ رَبِّكَ ٱلَّذِي خَلَقَ</p>
+                    <p class="text-sm italic text-gray-300 mb-1">"Bacalah dengan (menyebut) nama Tuhanmu yang menciptakan," (QS. Al-Alaq: 1)</p>
+                    <p class="text-sm">Komputer adalah alat memproses informasi. Islam memerintahkan kita untuk "membaca" (menginput data yang baik) dan memprosesnya dengan nama Allah agar outputnya bermanfaat.</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-cyan mb-2">2. Cinta Kepada Sesama (Tanggung Jawab Informasi)</h3>
+                    <p class="font-arabic text-2xl text-right mb-2 text-gold" dir="rtl">وَلَا تَقۡفُ مَا لَيۡسَ لَكَ بِهِۦ عِلۡمٌ</p>
+                    <p class="text-sm italic text-gray-300 mb-1">"Dan janganlah kamu mengikuti sesuatu yang tidak kamu ketahui." (QS. Al-Isra: 36)</p>
+                    <p class="text-sm">Dalam menggunakan hardware/software, jangan sebarkan hoax. Saring input sebelum diproses dan dibagikan (output).</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-cyan mb-2">3. Cinta Kepada Lingkungan & Tanah Air</h3>
+                    <p class="text-sm">Gunakan teknologi komputer untuk memajukan Gorontalo. Contoh: membuat sistem irigasi pintar untuk pertanian jagung, atau sistem pendataan nelayan di Teluk Tomini. Rawatlah perangkat keras (hardware) agar tidak cepat menjadi limbah elektronik.</p>
+                </div>
+            </div>
+         </div>
+    </div>
+
+
+    <!-- APPLICATION LOGIC -->
+    <script>
+        // ==========================================
+        // PENGATURAN GOOGLE SHEETS
+        // Ganti URL di bawah dengan Web App URL dari Google Apps Script Anda
+        // ==========================================
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1DwK89r9WsRJXKPxUrlbbWJ-Yy42EwMUKY9BKRaiaprLm_cxZKJ_KFc-2kkFLJXrhSQ/exec';
+        // ==========================================
+
+        const quranData = `
+            <div class="mb-4">
+                <p class="font-arabic text-2xl text-right text-gold" dir="rtl">قُلۡ هَلۡ يَسۡتَوِي ٱلَّذِينَ يَعۡلَمُونَ وَٱلَّذِينَ لَا يَعۡلَمُونَ</p>
+                <p class="text-sm italic text-gray-300">"Katakanlah: 'Adakah sama orang-orang yang mengetahui dengan orang-orang yang tidak mengetahui?'" (QS. Az-Zumar: 9)</p>
+            </div>
+        `;
+
+        const modulesData = [
+            {
+                id: 'm1', title: '1. Mengenal Sistem Komputer',
+                content: `
+                    <h2 class="text-2xl font-bold text-emerald mb-4">Apa itu Sistem Komputer?</h2>
+                    <p class="mb-4">Komputer bukan hanya layar dan keyboard. Ia adalah sebuah <b>Sistem</b> yang terdiri dari kumpulan perangkat yang saling bekerjasama untuk menerima data (input), mengolah data (proses), dan menghasilkan informasi (output).</p>
+                    <div class="bg-darkblue p-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4 my-6 border border-cyan/30">
+                        <div class="text-center"><div class="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 border-2 border-cyan shadow-[0_0_10px_#5BC0BE]">💻</div><span class="font-bold">Hardware</span><br><span class="text-xs text-gray-400">Perangkat Keras</span></div>
+                        <div class="text-2xl font-bold text-emerald">+</div>
+                        <div class="text-center"><div class="w-16 h-16 bg-purple/50 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 border-2 border-purple shadow-[0_0_10px_#7B2CBF]">💿</div><span class="font-bold">Software</span><br><span class="text-xs text-gray-400">Perangkat Lunak</span></div>
+                        <div class="text-2xl font-bold text-emerald">+</div>
+                        <div class="text-center"><div class="w-16 h-16 bg-gold/30 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 border-2 border-gold shadow-[0_0_10px_#FFD700]">👤</div><span class="font-bold">Brainware</span><br><span class="text-xs text-gray-400">Pengguna (Manusia)</span></div>
+                        <div class="text-2xl font-bold text-emerald">=</div>
+                        <div class="text-center px-4 py-2 bg-emerald text-navy font-bold rounded-lg animate-pulse">SISTEM<br>KOMPUTER</div>
+                    </div>
+                    <p class="mb-4">Ketiganya harus ada. Secanggih apapun hardware, tanpa software ia hanya benda mati. Ada hardware dan software, tapi tanpa manusia (brainware) yang memberi perintah, komputer tidak akan bekerja.</p>
+                `,
+                quiz: { q: "Komponen manakah yang berperan sebagai 'pemberi perintah' agar komputer bekerja?", options: ["Hardware", "Software", "Brainware"], ans: 2 }
+            },
+            {
+                id: 'm2', title: '2. Perangkat Keras (Hardware)',
+                content: `
+                    <h2 class="text-2xl font-bold text-emerald mb-4">Hardware: Bagian Fisik Komputer</h2>
+                    <p class="mb-4">Hardware adalah semua komponen komputer yang <b>memiliki wujud fisik</b>, bisa dilihat, dan bisa disentuh. Ia ibarat "tubuh" dari sebuah komputer.</p>
+                    <div class="grid md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-darkblue p-4 rounded border border-electric">
+                            <h3 class="font-bold text-cyan mb-2">Hardware Internal</h3>
+                            <p class="text-sm">Berada di dalam casing komputer. Coba bayangkan organ dalam tubuh manusia. Contoh: Motherboard, Processor (CPU), RAM, dan Power Supply.</p>
+                        </div>
+                        <div class="bg-darkblue p-4 rounded border border-electric">
+                            <h3 class="font-bold text-cyan mb-2">Hardware Eksternal</h3>
+                            <p class="text-sm">Berada di luar casing dan biasanya dicolokkan melalui port (USB, dll). Ibarat tangan dan telinga manusia. Contoh: Mouse, Keyboard, Monitor, Printer.</p>
+                        </div>
+                    </div>
+                    <p class="text-sm italic text-gray-300">Di Gorontalo, banyak kantor pemerintahan menggunakan komputer desktop dengan casing besar untuk hardware internal yang kuat dalam memproses data KTP masyarakat.</p>
+                `,
+                quiz: { q: "Manakah di bawah ini yang merupakan contoh Hardware Eksternal?", options: ["Motherboard", "Processor", "Printer"], ans: 2 }
+            },
+            {
+                id: 'm3', title: '3. Perangkat Input & Output',
+                content: `
+                    <h2 class="text-2xl font-bold text-emerald mb-4">Bagaimana Komputer Berkomunikasi?</h2>
+                    <p class="mb-4">Komputer butuh menerima data dari luar, dan memberikan hasil ke luar.</p>
+                    
+                    <h3 class="text-lg font-bold text-cyan mt-4">📥 Input Device (Perangkat Masukan)</h3>
+                    <p class="text-sm mb-4">Alat untuk memasukkan data/perintah. <br><b>Contoh:</b> Keyboard (mengetik huruf), Mouse (menggerakkan kursor), Scanner (memindai dokumen), Microphone (memasukkan suara).</p>
+                    
+                    <h3 class="text-lg font-bold text-gold mt-4">📤 Output Device (Perangkat Keluaran)</h3>
+                    <p class="text-sm mb-4">Alat untuk menampilkan hasil pengolahan data.<br><b>Contoh:</b> Monitor (menampilkan gambar/teks), Printer (mencetak ke kertas), Speaker (mengeluarkan suara), Proyektor (menampilkan ke layar besar).</p>
+
+                    <div class="bg-purple/20 p-4 rounded border border-purple text-sm mb-4">
+                        <b>Studi Kasus:</b> Saat kamu menggunakan mesin kasir di supermarket Gorontalo, Barcode Scanner adalah <i>Input</i>, sedangkan struk belanja yang keluar adalah hasil <i>Output</i> dari Printer.
+                    </div>
+                `,
+                quiz: { q: "Scanner digunakan untuk memindai dokumen fisik menjadi file digital. Maka Scanner termasuk perangkat?", options: ["Input", "Proses", "Output"], ans: 0 }
+            },
+            {
+                id: 'm4', title: '4. Perangkat Pemrosesan (CPU)',
+                content: `
+                    <h2 class="text-2xl font-bold text-emerald mb-4">CPU: Otak Komputer</h2>
+                    <p class="mb-4"><b>CPU (Central Processing Unit)</b> atau Processor adalah perangkat keras yang paling penting. Ia berfungsi mengontrol seluruh aktivitas komputer dan melakukan perhitungan (pemrosesan data).</p>
+                    
+                    <div class="flex justify-center my-6">
+                        <div class="w-32 h-32 bg-gray-300 rounded-lg flex items-center justify-center relative shadow-[0_0_20px_rgba(255,215,0,0.3)]">
+                            <div class="w-24 h-24 bg-purple text-white flex flex-col items-center justify-center font-bold text-xl rounded">
+                                CPU
+                                <span class="text-xs font-normal mt-1">Intel / AMD</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-cyan">Bagian Utama CPU:</h3>
+                    <ul class="list-disc pl-5 mb-4 text-sm text-gray-200">
+                        <li><b>ALU (Arithmetic Logic Unit):</b> Bagian yang melakukan perhitungan matematika (tambah, kurang) dan logika (perbandingan).</li>
+                        <li><b>CU (Control Unit):</b> Pengatur lalu lintas data. Ia memberitahu bagian komputer lain apa yang harus dilakukan.</li>
+                        <li><b>Register:</b> Tempat penyimpanan data sementara yang sangat kecil tapi sangat cepat di dalam CPU.</li>
+                    </ul>
+                    <p class="text-sm">Semua komponen ini terpasang pada papan sirkuit utama yang disebut <b>Motherboard</b>.</p>
+                `,
+                quiz: { q: "Bagian dari CPU yang bertugas melakukan perhitungan matematika disebut...", options: ["Control Unit", "ALU", "Register"], ans: 1 }
+            },
+            {
+                id: 'm5', title: '5. Memori & Penyimpanan',
+                content: `
+                    <h2 class="text-2xl font-bold text-emerald mb-4">Di Mana Dataku Disimpan?</h2>
+                    <p class="mb-4">Komputer butuh tempat untuk menyimpan data. Ada dua jenis utama: memori sementara dan penyimpanan permanen.</p>
+
+                    <div class="grid md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-darkblue p-4 rounded border-l-4 border-l-cyan">
+                            <h3 class="font-bold text-cyan mb-1">RAM (Random Access Memory)</h3>
+                            <p class="text-sm text-gray-300">Penyimpanan <b>sementara</b>. Digunakan CPU untuk menyimpan data program yang <i>sedang berjalan</i>. Jika komputer mati, data di RAM hilang (Volatile). Ibarat meja kerjamu; luas tapi sementara.</p>
+                        </div>
+                        <div class="bg-darkblue p-4 rounded border-l-4 border-l-gold">
+                            <h3 class="font-bold text-gold mb-1">Storage (HDD / SSD / Flashdisk)</h3>
+                            <p class="text-sm text-gray-300">Penyimpanan <b>permanen</b>. Data tidak hilang meski komputer dimatikan (Non-volatile). SSD jauh lebih cepat dari HDD. Ibarat lemari arsip; menyimpan selamanya sampai kamu hapus.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-purple/20 p-4 rounded border border-purple text-sm">
+                        <b>ROM (Read-Only Memory):</b> Memori khusus yang isinya sudah diisi oleh pabrik (misal: program BIOS untuk menyalakan komputer pertama kali) dan biasanya hanya bisa dibaca.
+                    </div>
+                `,
+                quiz: { q: "Jika listrik tiba-tiba mati saat kamu mengetik dan belum di-save, data yang hilang tersebut sebelumnya berada di mana?", options: ["RAM", "Harddisk", "Flashdisk"], ans: 0 }
+            },
+            {
+                id: 'm6', title: '6. Cara Kerja Sistem Komputer',
+                content: `
+                    <h2 class="text-2xl font-bold text-emerald mb-4">Alur Pemrosesan Data (IPO)</h2>
+                    <p class="mb-4">Secara sederhana, cara kerja komputer dirangkum dalam konsep <b>Input ➔ Process ➔ Output</b> (ditambah Storage/Penyimpanan).</p>
+                    
+                    <div class="relative max-w-full overflow-hidden bg-navy p-4 rounded-lg border border-electric mb-6 flex justify-between items-center text-center">
+                        <div class="w-1/4"><div class="text-3xl mb-2">⌨️</div><b>INPUT</b><br><span class="text-xs text-gray-400">Data Masuk</span></div>
+                        <div class="text-cyan text-2xl font-bold">➔</div>
+                        <div class="w-1/4 bg-darkblue py-2 rounded border border-purple relative">
+                            <div class="text-3xl mb-2">🧠</div><b>PROCESS</b><br><span class="text-xs text-gray-400">(CPU & RAM)</span>
+                            <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-gold">⬇️⬆️ Storage</div>
+                        </div>
+                        <div class="text-cyan text-2xl font-bold">➔</div>
+                        <div class="w-1/4"><div class="text-3xl mb-2">🖥️</div><b>OUTPUT</b><br><span class="text-xs text-gray-400">Informasi Jadi</span></div>
+                    </div>
+
+                    <p class="text-sm mb-4 text-gray-200">
+                        <b>Contoh Nyata:</b> Siswa MTs mengetik tugas makalah (<i>Input via Keyboard</i>). CPU mengatur huruf dan RAM menyimpan sementara ketikan tersebut (<i>Process</i>). Teks muncul di layar monitor (<i>Output</i>). Siswa menekan Ctrl+S untuk menyimpan ke Harddisk (<i>Storage</i>). Besoknya, ia mencetak tugasnya ke kertas (<i>Output via Printer</i>).
+                    </p>
+                    ${quranData}
+                `,
+                quiz: { q: "Urutan siklus pengolahan data pada komputer yang benar adalah...", options: ["Process - Input - Output", "Input - Process - Output", "Output - Process - Input"], ans: 1 }
+            }
+        ];
+
+        const gamesData = [
+            { 
+                id: 11, 
+                type: 'assemble', 
+                title: 'Merakit Komputer Virtual', 
+                stimulus: 'Teknisi MTs SMART membutuhkan bantuanmu untuk merakit ulang komputer lab yang telah dibongkar. Ini adalah langkah pertamamu!', 
+                q: 'Klik komponen yang tepat sesuai instruksi di bawah ini untuk memasangnya ke posisinya!', 
+                tasks: [
+                    { id: 'cpu', prompt: '1. Pasang Processor (CPU) sebagai otak komputer ke soket Motherboard!' },
+                    { id: 'ram', prompt: '2. Pasang RAM ke slot memori agar komputer bisa multitasking!' },
+                    { id: 'psu', prompt: '3. Pasang Power Supply (PSU) untuk menyalurkan listrik!' },
+                    { id: 'ssd', prompt: '4. Terakhir, pasang SSD sebagai media penyimpanan data permanen!' }
+                ] 
+            },
+            {
+                id: 12,
+                type: 'crossword',
+                title: 'Teka-Teki Silang (TTS)',
+                stimulus: 'Mari uji ingatan kosakatamu seputar Sistem Komputer!',
+                q: 'Isi kotak dengan huruf yang tepat berdasarkan petunjuk Mendatar dan Menurun.',
+                grid: { width: 4, height: 3 },
+                cells: [
+                    { x: 0, y: 0, a: 'C', num: 1 }, { x: 1, y: 0, a: 'P', num: 2 }, { x: 2, y: 0, a: 'U' },
+                    { x: 1, y: 1, a: 'S', num: 3 }, { x: 2, y: 1, a: 'S' }, { x: 3, y: 1, a: 'D' },
+                    { x: 1, y: 2, a: 'U' }
+                ],
+                clues: [
+                    { num: 1, dir: 'Mendatar', text: 'Otak utama dari sebuah sistem komputer.' },
+                    { num: 2, dir: 'Menurun', text: 'Singkatan dari penyuplai daya listrik komputer.' },
+                    { num: 3, dir: 'Mendatar', text: 'Media penyimpanan masa kini yang lebih cepat dari HDD.' }
+                ]
+            },
+            { id: 1, type: 'mcq', title: 'Detektif Hardware', stimulus: 'Seorang teknisi di Lab MTs SMART sedang memperbaiki komputer yang tidak bisa menampilkan gambar ke layar padahal mesin menyala.', q: 'Perangkat apa yang kemungkinan bermasalah atau kabelnya terlepas?', options: ['Keyboard', 'Monitor', 'Printer'], ans: 1 },
+            { id: 2, type: 'match', title: 'Pasangkan Fungsi', stimulus: 'Setiap bagian komputer punya tugas khusus seperti organ tubuh manusia.', q: 'Pasangkan perangkat keras dengan fungsinya yang tepat!', pairs: [['CPU', 'Otak pemroses data'], ['RAM', 'Penyimpanan sementara'], ['Harddisk', 'Penyimpanan permanen']] },
+            { id: 3, type: 'mcq', title: 'Input atau Output?', stimulus: 'Dinas Perikanan Provinsi Gorontalo memasang sensor suhu di laut. Data suhu tersebut masuk ke dalam komputer.', q: 'Sensor suhu tersebut dikategorikan sebagai perangkat...', options: ['Output', 'Input', 'Storage'], ans: 1 },
+            { id: 4, type: 'order', title: 'Alur Pemrosesan', stimulus: 'Budi sedang menghitung 5 + 5 menggunakan aplikasi Kalkulator di komputernya.', q: 'Urutkan proses yang terjadi di dalam komputer!', seq: ['Budi menekan angka 5+5 di Keyboard (Input)', 'CPU menghitung hasil penjumlahannya (Proses)', 'Layar menampilkan angka 10 (Output)'] },
+            { id: 5, type: 'mcq', title: 'Brainware', stimulus: 'Sebuah traktor pintar di pertanian jagung Gorontalo dikendalikan oleh seorang operator melalui tablet.', q: 'Dalam sistem komputer traktor pintar tersebut, operator manusia bertindak sebagai...', options: ['Hardware', 'Software', 'Brainware'], ans: 2 },
+            { id: 6, type: 'mcq', title: 'Misteri Memori', stimulus: 'Komputer Andi tiba-tiba mati lampu. Saat menyala kembali, ketikan tugasnya yang belum disimpan (save) hilang total.', q: 'Hal ini membuktikan bahwa sebelum di-save, data disimpan di memori yang bersifat volatile, yaitu...', options: ['ROM', 'Harddisk', 'RAM'], ans: 2 },
+            { id: 7, type: 'match', title: 'Internal vs Eksternal', stimulus: 'Komputer terdiri dari komponen di dalam casing dan di luar casing.', q: 'Tentukan lokasi komponen berikut!', pairs: [['Motherboard', 'Internal (Dalam Casing)'], ['Mouse', 'Eksternal (Luar Casing)'], ['Power Supply', 'Internal (Dalam Casing)']] },
+            { id: 8, type: 'mcq', title: 'Tantangan Motherboard', stimulus: 'Budi membeli prosesor baru. Ia harus memasangnya di sebuah papan sirkuit utama tempat semua komponen saling terhubung.', q: 'Papan sirkuit utama tersebut dinamakan...', options: ['Motherboard', 'Keyboard', 'VGA Card'], ans: 0 },
+            { id: 9, type: 'mcq', title: 'Kecepatan Penyimpanan', stimulus: 'Pak Alpian ingin laptopnya menyala (booting) lebih cepat dan buka aplikasi lebih ngebut. Ia disarankan mengganti media penyimpanannya dari piringan magnetik ke tipe chip flash.', q: 'Perangkat apa yang harus dibeli Pak Alpian?', options: ['Flashdisk', 'Harddisk (HDD)', 'SSD (Solid State Drive)'], ans: 2 },
+            { id: 10, type: 'order', title: 'Siklus Cetak', stimulus: 'Sekretaris desa di Kabupaten Bone Bolango ingin mencetak surat keterangan dari file PDF.', q: 'Urutkan langkah kerja sistem komputernya!', seq: ['Membuka file PDF dari Harddisk/SSD (Storage)', 'Memberi perintah Print via Mouse (Input)', 'Printer mencetak tinta ke atas kertas (Output)'] }
+        ];
+
+        const quizData = [
+            // Level 1: Dasar (1-3, Bobot 8)
+            { lvl: 1, w: 8, s: 'Sistem komputer terdiri dari tiga komponen utama yang tidak dapat dipisahkan agar sistem dapat berjalan dengan baik.', q: 'Ketiga komponen tersebut adalah...', o: ['Hardware, Software, Malware', 'Hardware, Software, Brainware', 'Input, Process, Output', 'CPU, Monitor, Keyboard'], a: 1 },
+            { lvl: 1, w: 8, s: 'Perangkat keras dibagi berdasarkan fungsinya, salah satunya adalah perangkat masukan (input).', q: 'Fungsi utama dari perangkat masukan adalah...', o: ['Menampilkan hasil pengolahan data', 'Menyimpan data secara permanen', 'Memasukkan data atau perintah ke dalam komputer', 'Memproses data matematika'], a: 2 },
+            { lvl: 1, w: 8, s: 'Gambar di layar komputermu dihasilkan oleh sebuah perangkat keras khusus yang mengubah sinyal digital menjadi tampilan visual.', q: 'Perangkat keras keluaran yang dimaksud adalah...', o: ['Monitor', 'Keyboard', 'Speaker', 'Scanner'], a: 0 },
+            // Level 2: Sedang (4-7, Bobot 10)
+            { lvl: 2, w: 10, s: 'Sebuah unit pemrosesan sentral (CPU) memiliki bagian yang disebut ALU (Arithmetic Logic Unit).', q: 'Tugas spesifik dari ALU adalah...', o: ['Menyimpan instruksi program sementara', 'Melakukan operasi perhitungan matematika dan logika', 'Mengatur lalu lintas data antar komponen', 'Memberikan daya listrik ke motherboard'], a: 1 },
+            { lvl: 2, w: 10, s: 'Perbedaan mendasar antara RAM dan ROM terletak pada sifat penyimpanan datanya.', q: 'Pernyataan yang tepat mengenai RAM adalah...', o: ['Menyimpan data permanen dari pabrik', 'Menyimpan data BIOS untuk menyalakan komputer', 'Bersifat volatile (data hilang jika listrik mati)', 'Kecepatannya lebih lambat dari Harddisk'], a: 2 },
+            { lvl: 2, w: 10, s: 'Dalam sebuah kegiatan presentasi di kelas, guru menggunakan komputer yang terhubung ke proyektor. Guru mengklik slide menggunakan mouse.', q: 'Manakah klasifikasi perangkat yang benar berdasarkan skenario tersebut?', o: ['Mouse (Input), Proyektor (Output)', 'Mouse (Output), Proyektor (Input)', 'Keduanya adalah perangkat pemrosesan', 'Keduanya adalah perangkat input'], a: 0 },
+            { lvl: 2, w: 10, s: 'Semua komponen keras internal komputer seperti RAM, CPU, dan VGA Card terpasang pada satu tempat terpusat.', q: 'Papan sirkuit utama tersebut dinamakan...', o: ['Power Supply', 'Casing', 'Motherboard', 'Harddisk'], a: 2 },
+            // Level 3: HOTS (8-10, Bobot 12)
+            { lvl: 3, w: 12, s: 'Seorang petani di Gorontalo menggunakan sistem penyiraman tomat otomatis. Sistem ini menggunakan sensor kelembapan tanah, unit pemroses mini (mikrokontroler), dan pompa air.', q: 'Berdasarkan konsep sistem komputer, peran sensor kelembapan dan pompa air berturut-turut adalah sebagai...', o: ['Input dan Proses', 'Input dan Output', 'Proses dan Output', 'Storage dan Output'], a: 1 },
+            { lvl: 3, w: 12, s: 'Sebuah Madrasah Tsanawiyah akan membeli komputer untuk lab. Kebutuhannya adalah agar komputer tersebut sangat cepat saat dinyalakan (booting) dan cepat membuka aplikasi, namun tidak butuh kapasitas simpan yang terlalu besar karena data disimpan di cloud.', q: 'Spesifikasi media penyimpanan (storage) yang paling direkomendasikan adalah...', o: ['Harddisk (HDD) kapasitas 2 Terabyte', 'SSD (Solid State Drive) kapasitas 256 Gigabyte', 'Flashdisk kapasitas 64 Gigabyte', 'RAM kapasitas 32 Gigabyte'], a: 1 },
+            { lvl: 3, w: 12, s: 'Andi mengunduh gambar pemandangan dari internet, lalu menyimpannya. Keesokan harinya, ia membuka gambar tersebut dan mencetaknya menggunakan printer berwarna.', q: 'Berdasarkan studi kasus di atas, urutan perangkat keras (hardware) yang dominan bekerja dari awal menyimpan hingga mencetak adalah...', o: ['RAM -> Monitor -> Scanner', 'Storage (HDD/SSD) -> RAM -> CPU -> Printer', 'Printer -> CPU -> Storage', 'Keyboard -> Mouse -> CPU'], a: 1 }
+        ];
+
+        const vlabData = {
+            'Motherboard': { img: '🟩', desc: 'Papan sirkuit utama (Mainboard). Berfungsi sebagai tulang punggung tempat semua komponen komputer terpasang dan saling berkomunikasi.', func: ['Menghubungkan CPU, RAM, dan komponen lain.', 'Mendistribusikan aliran listrik.', 'Menyediakan port untuk perangkat eksternal.'], ctx: 'Ibarat jalan raya utama di Kota Gorontalo tempat semua kendaraan lalu lalang.' },
+            'Processor (CPU)': { img: '🟪', desc: 'Central Processing Unit. Ini adalah "Otak" komputer. Sebuah chip kecil yang sangat canggih untuk menjalankan semua perintah.', func: ['Menerima instruksi dari software.', 'Melakukan perhitungan (ALU).', 'Mengatur alur data (Control Unit).'], ctx: 'Bagaikan pemimpin daerah yang mengambil keputusan berdasarkan laporan data.' },
+            'RAM (Memory)': { img: '🟩', desc: 'Random Access Memory. Tempat penyimpanan sementara berkecepatan sangat tinggi. Semakin besar RAM, semakin banyak aplikasi yang bisa dibuka bersamaan tanpa lag.', func: ['Menyimpan data aplikasi yang sedang aktif.', 'Menyuplai data dengan cepat ke CPU.', 'Dikosongkan saat komputer dimatikan.'], ctx: 'Seperti meja belajar siswa; kalau mejanya luas, bisa taruh banyak buku sekaligus saat mengerjakan PR.' },
+            'SSD (Penyimpanan)': { img: '⬛', desc: 'Solid State Drive. Media penyimpanan data permanen generasi modern. Tidak menggunakan piringan mekanik (seperti HDD), melainkan chip flash, sehingga jauh lebih cepat.', func: ['Menyimpan Sistem Operasi (Windows, dll).', 'Menyimpan file dokumen, foto, aplikasi secara permanen.', 'Mempercepat waktu booting komputer.'], ctx: 'Gudang arsip digital sekolah yang datanya aman meski listrik padam.' },
+            'Power Supply': { img: '🔌', desc: 'Power Supply Unit (PSU). Jantung yang memompa listrik ke seluruh bagian komputer. Mengubah arus listrik bolak-balik (AC) dari colokan PLN menjadi arus searah (DC) yang dibutuhkan komponen.', func: ['Mengubah tegangan listrik AC ke DC.', 'Menyalurkan daya sesuai porsi tiap komponen.', 'Melindungi dari lonjakan listrik (beberapa model).'], ctx: 'Seperti gardu listrik PLN yang mendistribusikan listrik yang aman untuk peralatan elektronik warga.' }
+        };
+
+        // --- STATE MANAGEMENT --- //
+        let appState = {
+            name: '',
+            class: '',
+            points: 0,
+            stars: 0,
+            modulesDone: [], // store module ids
+            gamesDone: [], // store game ids
+            quizScore: null,
+            quizDetail: {},
+            settings: { audio: true, presentation: false }
+        };
+
+        let tempState = {
+            currentModuleIndex: 0,
+            currentGameIndex: 0,
+            currentQuizIndex: 0,
+            gameMechanicState: {} // Used for drag-drop/matching logic
+        };
+
+        // --- INITIALIZATION --- //
+        window.onload = () => {
+            loadState();
+            if (appState.name) {
+                updateDashboardUI();
+                nav('dashboard');
+            } else {
+                setTimeout(() => nav('cover'), 2000); // Hide splash after 2s
+            }
+        };
+
+        function saveState() {
+            localStorage.setItem('mpi_sk_state', JSON.stringify(appState));
+            updateDashboardUI();
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('mpi_sk_state');
+                if (saved) {
+                    appState = { ...appState, ...JSON.parse(saved) };
+                }
+            } catch (e) {
+                console.error("Gagal memuat state penyimpanan lokal:", e);
+            }
+        }
+
+        let confirmActionCallback = null;
+        
+        function showConfirmModal(title, msg, onYes) {
+            playSound('click');
+            document.getElementById('c-modal-title').innerText = title;
+            document.getElementById('c-modal-message').innerHTML = msg;
+            confirmActionCallback = onYes;
+            document.getElementById('confirm-modal').classList.add('active');
+        }
+
+        function handleConfirm(isYes) {
+            playSound('click');
+            document.getElementById('confirm-modal').classList.remove('active');
+            if (isYes && confirmActionCallback) {
+                confirmActionCallback();
+            }
+            confirmActionCallback = null;
+        }
+
+        function resetData() {
+            showConfirmModal(
+                "Hapus Data",
+                "Yakin ingin mereset semua data belajar? Semua progres akan hilang.",
+                () => {
+                    localStorage.removeItem('mpi_sk_state');
+                    location.reload();
+                }
+            );
+        }
+
+        // --- GOOGLE SHEETS INTEGRATION --- //
+        function sendDataToSheets() {
+            // Cek apakah URL sudah diisi dan bukan URL placeholder
+            if(!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('PASTE_URL_WEB_APP')) {
+                console.log("Pengiriman ke Google Sheets dilewati (URL belum diatur).");
+                return; 
+            }
+
+            // Buat form data untuk dikirim ke Google Apps Script
+            const formData = new FormData();
+            formData.append('nama', appState.name);
+            formData.append('kelas', appState.class);
+            formData.append('skor', appState.quizScore);
+            formData.append('predikat', appState.quizDetail.pred);
+
+            // Kirim request ke background secara diam-diam
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData })
+                .then(response => console.log('Sukses mengirim nilai ke Spreadsheet!'))
+                .catch(error => console.error('Gagal mengirim ke Spreadsheet:', error.message));
+        }
+
+        // --- NAVIGATION & UI HELPER --- //
+        function nav(screenId) {
+            playSound('click');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${screenId}`).classList.add('active');
+            window.scrollTo(0, 0);
+
+            if(screenId === 'learning') loadModulesList();
+            if(screenId === 'gaming') renderGamesSelection();
+        }
+
+        function showGlobalModal(title, msg) {
+            document.getElementById('g-modal-title').innerText = title;
+            document.getElementById('g-modal-message').innerHTML = msg;
+            document.getElementById('global-modal').classList.add('active');
+            playSound('click');
+        }
+        function closeGlobalModal() {
+            document.getElementById('global-modal').classList.remove('active');
+            playSound('click');
+        }
+
+        function toggleAudio() {
+            appState.settings.audio = !appState.settings.audio;
+            document.getElementById('btn-audio').innerText = appState.settings.audio ? '🔊' : '🔇';
+            saveState();
+        }
+
+        function togglePresentation() {
+            appState.settings.presentation = !appState.settings.presentation;
+            if(appState.settings.presentation) {
+                document.body.classList.add('presentation-mode');
+            } else {
+                document.body.classList.remove('presentation-mode');
+            }
+        }
+
+        // --- COVER & LOGIN --- //
+        function showDevInfo() {
+            const content = `
+                <div class="text-center">
+                    <img src="https://iili.io/CSAHRQ1.png" onerror="this.src='https://placehold.co/100x100/1C2541/5BC0BE?text=AU'" class="w-24 h-24 rounded-full mx-auto border-4 border-cyan mb-4 object-cover">
+                    <h3 class="text-xl font-bold text-emerald">Alpian Usman, S.Pd., M.Si.</h3>
+                    <p class="text-gray-300">Pengembang MPI</p>
+                    <p class="text-sm mt-2">MTs Muhammadiyah SMART Kota Gorontalo</p>
+                    <p class="text-sm">alpiannamsu000@gmail.com</p>
+                </div>
+            `;
+            document.getElementById('info-content').innerHTML = content;
+            document.getElementById('info-modal').classList.add('active');
+        }
+
+        function showObjectives() {
+            const content = `
+                <h3 class="text-xl font-bold text-emerald mb-4 border-b border-electric pb-2">Tujuan Pembelajaran</h3>
+                <p class="mb-2">Peserta didik mampu menjelaskan perangkat keras yang digunakan untuk pemrosesan dan penyimpanan data dalam komputer.</p>
+                <ul class="list-disc pl-5 text-sm text-gray-300 space-y-1">
+                    <li>Memahami konsep Sistem Komputer (Hardware, Software, Brainware).</li>
+                    <li>Mengklasifikasikan perangkat Input dan Output.</li>
+                    <li>Menjelaskan fungsi CPU (Processor) dan komponen Motherboard.</li>
+                    <li>Membedakan jenis Memori (RAM) dan Penyimpanan (Storage).</li>
+                    <li>Mensimulasikan alur kerja komputer dalam kehidupan sehari-hari.</li>
+                </ul>
+            `;
+            document.getElementById('info-content').innerHTML = content;
+            document.getElementById('info-modal').classList.add('active');
+        }
+
+        function closeInfoModal() { document.getElementById('info-modal').classList.remove('active'); }
+        function closeKbcModal() { document.getElementById('kbc-modal').classList.remove('active'); }
+        function showKBCModal() { 
+            playSound('click');
+            document.getElementById('kbc-modal').classList.add('active'); 
+        }
+
+        function handleLogin() {
+            const name = document.getElementById('input-name').value.trim();
+            const cls = document.getElementById('input-class').value;
+            if (name.length < 3 || !cls) {
+                showGlobalModal("Perhatian", "Mohon isi nama lengkap dan pilih kelas dengan benar.");
+                return;
+            }
+            appState.name = name;
+            appState.class = cls;
+            saveState();
+            
+            document.getElementById('ob-name').innerText = name;
+            nav('onboarding');
+        }
+
+        // --- ONBOARDING --- //
+        let obIndex = 0;
+        function nextOnboarding() {
+            playSound('click');
+            const slides = document.querySelectorAll('.ob-slide');
+            const dots = document.getElementById('ob-dots').children;
+            
+            slides[obIndex].classList.add('hidden');
+            slides[obIndex].classList.remove('block');
+            dots[obIndex].classList.remove('bg-emerald');
+            dots[obIndex].classList.add('bg-gray-500');
+
+            obIndex++;
+            if (obIndex < slides.length) {
+                slides[obIndex].classList.remove('hidden');
+                slides[obIndex].classList.add('block');
+                dots[obIndex].classList.add('bg-emerald');
+                dots[obIndex].classList.remove('bg-gray-500');
+                if (obIndex === slides.length - 1) {
+                    document.getElementById('ob-btn').innerText = 'MULAI PETUALANGAN';
+                }
+            } else {
+                updateDashboardUI();
+                nav('dashboard');
+            }
+        }
+
+        // --- DASHBOARD LOGIC --- //
+        function updateDashboardUI() {
+            if(!appState.name) return;
+            document.getElementById('dash-name').innerText = appState.name;
+            document.getElementById('dash-class').innerText = appState.class;
+            document.getElementById('dash-avatar').innerText = appState.name.charAt(0).toUpperCase();
+            document.getElementById('dash-points').innerText = appState.points;
+            document.getElementById('dash-stars').innerText = appState.stars;
+            document.getElementById('dash-game-text').innerText = `${gamesData.length} Tantangan Interaktif`;
+
+            // Update Progress Belajar
+            let pBelajar = (appState.modulesDone.length / modulesData.length) * 100;
+            document.getElementById('prog-belajar').style.width = `${pBelajar}%`;
+
+            // Lock Logic
+            const cBermain = document.getElementById('card-bermain');
+            const lBermain = document.getElementById('lock-bermain');
+            const sBermain = document.getElementById('status-bermain');
+            if (appState.modulesDone.length === modulesData.length) {
+                lBermain.style.display = 'none';
+                sBermain.innerText = 'TERBUKA'; sBermain.className = 'mt-2 text-xs font-bold text-emerald';
+                cBermain.classList.remove('opacity-70');
+            }
+
+            let pBermain = (appState.gamesDone.length / gamesData.length) * 100;
+            document.getElementById('prog-bermain').style.width = `${pBermain}%`;
+
+            const cBerlatih = document.getElementById('card-berlatih');
+            const lBerlatih = document.getElementById('lock-berlatih');
+            const sBerlatih = document.getElementById('status-berlatih');
+            if (appState.gamesDone.length === gamesData.length) {
+                lBerlatih.style.display = 'none';
+                sBerlatih.innerText = 'TERBUKA'; sBerlatih.className = 'mt-2 text-xs font-bold text-emerald';
+                cBerlatih.classList.remove('opacity-70');
+            }
+
+            // Report Button
+            if (appState.quizScore !== null) {
+                document.getElementById('btn-report').style.display = 'flex';
+                sBerlatih.innerText = 'SELESAI (Skor: ' + appState.quizScore + ')';
+                sBerlatih.className = 'mt-2 text-xs font-bold text-purple';
+                
+                const progBerlatihContainer = cBerlatih.querySelector('.w-full.bg-darkblue.rounded-full.h-2');
+                if (progBerlatihContainer && !progBerlatihContainer.innerHTML.includes('bg-purple')) {
+                    progBerlatihContainer.innerHTML = '<div class="bg-purple h-2 rounded-full" style="width: 100%"></div>';
+                }
+            }
+        }
+
+        function checkLock(menu) {
+            playSound('click');
+            if (menu === 'bermain') {
+                if (appState.modulesDone.length < modulesData.length) {
+                    showGlobalModal("Terkunci 🔒", "Selesaikan seluruh 6 Modul di menu <b>BELAJAR</b> terlebih dahulu untuk membuka Arena Bermain.");
+                } else {
+                    nav('gaming');
+                }
+            } else if (menu === 'berlatih') {
+                if (appState.gamesDone.length < gamesData.length) {
+                    showGlobalModal("Terkunci 🔒", `Selesaikan seluruh ${gamesData.length} Misi di menu <b>BERMAIN</b> terlebih dahulu untuk membuka Evaluasi.`);
+                } else if (appState.quizScore !== null) {
+                    nav('report');
+                } else {
+                    resetAssessmentUI();
+                    nav('assessment');
+                }
+            }
+        }
+
+        function resetAssessmentUI() {
+            document.getElementById('quiz-intro').classList.remove('hidden');
+            document.getElementById('quiz-play-area').classList.add('hidden');
+            document.getElementById('quiz-result').classList.add('hidden');
+        }
+
+        // --- MENU BELAJAR --- //
+        function loadModulesList() {
+            const list = document.getElementById('module-list');
+            list.innerHTML = '';
+            modulesData.forEach((mod, idx) => {
+                const isDone = appState.modulesDone.includes(mod.id);
+                const li = document.createElement('li');
+                li.className = `p-3 rounded cursor-pointer transition flex justify-between items-center ${isDone ? 'bg-emerald/20 text-emerald font-bold border border-emerald' : 'bg-darkblue hover:bg-electric'}`;
+                li.innerHTML = `<span>${mod.title}</span> <span>${isDone ? '✅' : ''}</span>`;
+                li.onclick = () => renderModule(idx);
+                list.appendChild(li);
+            });
+            // Auto open first unfinished, or first
+            let targetIdx = 0;
+            for(let i=0; i<modulesData.length; i++){
+                if(!appState.modulesDone.includes(modulesData[i].id)) { targetIdx = i; break; }
+            }
+            renderModule(targetIdx);
+        }
+
+        function renderModule(idx) {
+            tempState.currentModuleIndex = idx;
+            const mod = modulesData[idx];
+            const isDone = appState.modulesDone.includes(mod.id);
+            
+            let html = `<div class="slide-in pb-20">`; // padding bottom for scrolling
+            html += mod.content;
+            
+            // Add Interactive Quiz at bottom
+            html += `
+                <div class="mt-8 bg-darkblue p-6 rounded-xl border border-electric shadow-lg relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-2 h-full ${isDone ? 'bg-emerald' : 'bg-gold'}"></div>
+                    <h3 class="font-bold text-lg mb-2 ${isDone ? 'text-emerald' : 'text-gold'}">⚡ Aktivitas Interaktif</h3>
+                    <p class="mb-4 text-sm">${mod.quiz.q}</p>
+                    <div class="space-y-2">
+            `;
+            mod.quiz.options.forEach((opt, oIdx) => {
+                html += `<button onclick="checkModQuiz(${idx}, ${oIdx})" class="w-full text-left p-3 bg-navy rounded border border-electric hover:border-cyan transition ${isDone && oIdx === mod.quiz.ans ? 'border-emerald bg-emerald/10' : ''}">${String.fromCharCode(65+oIdx)}. ${opt}</button>`;
+            });
+            html += `</div>
+                    <p id="mod-feedback" class="mt-4 text-sm font-bold ${isDone ? 'text-emerald block' : 'hidden'}">${isDone ? '✅ Tepat Sekali! Kamu memahami materi ini.' : ''}</p>`;
+            
+            // NEXT BUTTON LOGIC
+            if (isDone) {
+                if (idx < modulesData.length - 1) {
+                    html += `<button onclick="renderModule(${idx + 1})" class="mt-4 glass-button px-6 py-3 rounded-lg font-bold w-full flex justify-between items-center bg-gradient-to-r from-emerald to-cyan text-navy slide-in"><span>Modul Berikutnya: ${modulesData[idx+1].title.substring(3)}</span> <span class="text-xl">➡️</span></button>`;
+                } else {
+                    html += `<button onclick="nav('dashboard')" class="mt-4 glass-button px-6 py-3 rounded-lg font-bold w-full flex justify-between items-center bg-gradient-to-r from-gold to-yellow-400 text-navy slide-in"><span>Selesai Belajar, Ke Dashboard</span> <span class="text-xl">🏆</span></button>`;
+                }
+            } else {
+                html += `<div id="next-module-container"></div>`;
+            }
+
+            html += `</div>
+                </div>`;
+            document.getElementById('module-display').innerHTML = html;
+            document.getElementById('module-content-area').scrollTop = 0;
+            playSound('click');
+        }
+
+        function checkModQuiz(modIdx, selectedIdx) {
+            const mod = modulesData[modIdx];
+            const feedback = document.getElementById('mod-feedback');
+            const nextContainer = document.getElementById('next-module-container');
+            feedback.classList.remove('hidden');
+            
+            if (selectedIdx === mod.quiz.ans) {
+                playSound('correct');
+                feedback.innerHTML = '✅ Tepat Sekali! Kamu memahami materi ini.';
+                feedback.className = 'mt-4 text-sm font-bold text-emerald slide-in block';
+                
+                // Visual update for buttons without re-rendering everything
+                const btns = feedback.parentElement.querySelectorAll('.space-y-2 button');
+                btns.forEach((btn, i) => {
+                    if(i === mod.quiz.ans) {
+                        btn.classList.add('border-emerald', 'bg-emerald/10');
+                    } else {
+                        btn.classList.remove('border-emerald', 'bg-emerald/10');
+                    }
+                });
+
+                if (!appState.modulesDone.includes(mod.id)) {
+                    appState.modulesDone.push(mod.id);
+                    appState.points += 10;
+                    appState.stars += 1;
+                    saveState();
+                    loadModulesList(); // refresh sidebar
+                    
+                    if (appState.modulesDone.length === modulesData.length) {
+                        setTimeout(() => showGlobalModal("🎉 Luar Biasa!", "Kamu telah menyelesaikan semua modul belajar! Menu <b>BERMAIN</b> kini telah terbuka. Lanjutkan misimu!"), 1000);
+                    }
+                }
+                
+                // Show next button immediately in the container
+                if (nextContainer) {
+                    if (modIdx < modulesData.length - 1) {
+                        nextContainer.innerHTML = `<button onclick="renderModule(${modIdx + 1})" class="mt-4 glass-button px-6 py-3 rounded-lg font-bold w-full flex justify-between items-center bg-gradient-to-r from-emerald to-cyan text-navy slide-in"><span>Modul Berikutnya: ${modulesData[modIdx+1].title.substring(3)}</span> <span class="text-xl">➡️</span></button>`;
+                    } else {
+                        nextContainer.innerHTML = `<button onclick="nav('dashboard')" class="mt-4 glass-button px-6 py-3 rounded-lg font-bold w-full flex justify-between items-center bg-gradient-to-r from-gold to-yellow-400 text-navy slide-in"><span>Selesai Belajar, Ke Dashboard</span> <span class="text-xl">🏆</span></button>`;
+                    }
+                }
+
+            } else {
+                playSound('wrong');
+                feedback.innerHTML = '❌ Masih kurang tepat. Coba baca ulang materinya!';
+                feedback.className = 'mt-4 text-sm font-bold text-red-400 slide-in block';
+            }
+        }
+
+        // --- VIRTUAL LAB LOGIC --- //
+        function showVirtualLab() {
+            playSound('click');
+            document.getElementById('vlab-modal').classList.add('active');
+            resetVirtualLab();
+        }
+        function closeVirtualLab() {
+            playSound('click');
+            document.getElementById('vlab-modal').classList.remove('active');
+        }
+
+        function toggleDismantle() {
+            playSound('click');
+            const pc = document.getElementById('pc-container');
+            const btn = document.getElementById('btn-dismantle');
+            if (pc.classList.contains('dismantled')) {
+                pc.classList.remove('dismantled');
+                btn.innerText = 'Bongkar Komputer';
+                resetLabInfo();
+            } else {
+                pc.classList.add('dismantled');
+                btn.innerText = 'Rakit Kembali';
+            }
+        }
+
+        function resetVirtualLab() {
+            document.getElementById('pc-container').classList.remove('dismantled');
+            document.getElementById('btn-dismantle').innerText = 'Bongkar Komputer';
+            resetLabInfo();
+        }
+
+        function resetLabInfo() {
+            document.getElementById('vlab-default-msg').classList.remove('hidden');
+            document.getElementById('vlab-details').classList.add('hidden');
+        }
+
+        function showComponentInfo(compName) {
+            playSound('click');
+            const data = vlabData[compName];
+            if(!data) return;
+
+            document.getElementById('vlab-default-msg').classList.add('hidden');
+            const details = document.getElementById('vlab-details');
+            details.classList.remove('hidden');
+            
+            // Re-trigger animation
+            details.classList.remove('slide-in');
+            void details.offsetWidth;
+            details.classList.add('slide-in');
+
+            document.getElementById('vc-title').innerText = compName;
+            document.getElementById('vc-img-placeholder').innerText = data.img;
+            document.getElementById('vc-desc').innerText = data.desc;
+            
+            const ul = document.getElementById('vc-func');
+            ul.innerHTML = '';
+            data.func.forEach(f => {
+                ul.innerHTML += `<li>${f}</li>`;
+            });
+            document.getElementById('vc-context').innerText = data.ctx;
+        }
+
+        // --- MENU BERMAIN --- //
+        function renderGamesSelection() {
+            document.getElementById('game-play-area').classList.add('hidden');
+            const sel = document.getElementById('game-selection');
+            sel.classList.remove('hidden');
+            sel.innerHTML = '';
+            document.getElementById('game-progress-text').innerText = `${appState.gamesDone.length}/${gamesData.length}`;
+
+            gamesData.forEach((g, idx) => {
+                const isDone = appState.gamesDone.includes(g.id);
+                const btn = document.createElement('div');
+                btn.className = `glass-panel p-4 text-center cursor-pointer transition transform hover:scale-105 flex flex-col items-center justify-center h-32 relative ${isDone ? 'border-emerald' : 'border-electric'}`;
+                
+                let icon = '❓';
+                if(g.type === 'mcq') icon = '🎯';
+                if(g.type === 'match') icon = '🧩';
+                if(g.type === 'order') icon = '🔄';
+                if(g.type === 'assemble') icon = '🛠️';
+
+                btn.innerHTML = `
+                    <div class="text-3xl mb-2">${icon}</div>
+                    <div class="font-bold text-sm ${isDone ? 'text-emerald' : 'text-white'}">Misi ${idx+1}</div>
+                    ${isDone ? '<div class="absolute top-2 right-2 text-emerald">✅</div>' : ''}
+                `;
+                btn.onclick = () => loadGame(idx);
+                sel.appendChild(btn);
+            });
+        }
+
+        function loadGame(idx) {
+            playSound('click');
+            tempState.currentGameIndex = idx;
+            const game = gamesData[idx];
+            document.getElementById('game-selection').classList.add('hidden');
+            const gp = document.getElementById('game-play-area');
+            gp.classList.remove('hidden');
+
+            document.getElementById('gp-title').innerText = `Misi ${idx+1}: ${game.title}`;
+            document.getElementById('gp-stimulus').innerText = game.stimulus;
+            document.getElementById('gp-question').innerText = game.q;
+            
+            const inter = document.getElementById('gp-interface');
+            inter.innerHTML = '';
+            const feedback = document.getElementById('gp-feedback');
+            feedback.classList.add('hidden');
+
+            if (game.type === 'mcq') {
+                document.getElementById('gp-type').innerText = 'Pilihan Ganda';
+                game.options.forEach((opt, oIdx) => {
+                    inter.innerHTML += `<button onclick="checkGameMCQ(${idx}, ${oIdx})" class="glass-button w-full py-4 text-left px-6 rounded-lg mb-3 hover:scale-[1.02]">${opt}</button>`;
+                });
+            } 
+            else if (game.type === 'match') {
+                document.getElementById('gp-type').innerText = 'Pasangkan';
+                tempState.gameMechanicState = { selectedLeft: null, matched: 0, total: game.pairs.length };
+                
+                // Shuffle items to avoid simple side-by-side matching
+                let lefts = game.pairs.map((p,i) => ({id: i, t: p[0]}));
+                let rights = game.pairs.map((p,i) => ({id: i, t: p[1]})).sort(()=>Math.random()-0.5);
+
+                let html = `<div class="flex flex-col md:flex-row gap-8 justify-between w-full h-full">`;
+                
+                html += `<div class="flex-1 space-y-4" id="match-left">`;
+                lefts.forEach(l => {
+                    html += `<button id="l-${l.id}" onclick="selectMatch('left', ${l.id})" class="w-full bg-navy border-2 border-cyan p-4 rounded text-center transition hover:bg-cyan/20">${l.t}</button>`;
+                });
+                html += `</div>`;
+
+                html += `<div class="flex-1 space-y-4" id="match-right">`;
+                rights.forEach(r => {
+                    html += `<button id="r-${r.id}" onclick="selectMatch('right', ${r.id})" class="w-full bg-navy border-2 border-gold p-4 rounded text-center transition hover:bg-gold/20">${r.t}</button>`;
+                });
+                html += `</div></div>`;
+                inter.innerHTML = html;
+            }
+            else if (game.type === 'order') {
+                document.getElementById('gp-type').innerText = 'Urutkan (Klik sesuai urutan)';
+                let items = game.seq.map((s, i) => ({id: i, text: s})).sort(()=>Math.random()-0.5);
+                tempState.gameMechanicState = { currentStep: 0, total: game.seq.length, orderedItems: [] };
+                
+                let html = `<div class="flex flex-col gap-3" id="order-container">`;
+                items.forEach(item => {
+                    html += `<button id="ord-${item.id}" onclick="selectOrder(${item.id})" class="bg-navy border border-electric p-4 rounded text-left flex gap-4 items-center hover:bg-electric transition">
+                        <span class="w-8 h-8 rounded-full bg-darkblue flex items-center justify-center font-bold order-num">?</span>
+                        <span>${item.text}</span>
+                    </button>`;
+                });
+                html += `</div>`;
+                inter.innerHTML = html;
+            }
+            else if (game.type === 'assemble') {
+                document.getElementById('gp-type').innerText = 'Simulasi Interaktif (Klik Komponen)';
+                tempState.gameMechanicState = { currentStep: 0, tasks: game.tasks };
+                
+                let html = `
+                    <div id="assemble-prompt-box" class="bg-emerald/20 border border-emerald text-emerald p-3 rounded font-bold text-center mb-6 h-14 flex items-center justify-center animate-pulse">
+                        ${game.tasks[0].prompt}
+                    </div>
+                    <div class="relative w-full max-w-[400px] aspect-square mx-auto bg-[#1a1a2e] border-4 border-[#111] rounded-xl shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] overflow-hidden" id="assemble-workspace">
+                        
+                        <!-- Motherboard (Fixed as base) -->
+                        <div class="absolute top-[10%] left-[10%] w-[60%] h-[60%] opacity-60" id="slot-mobo">
+                            <svg viewBox="0 0 280 280" class="w-full h-full">
+                                <rect width="280" height="280" fill="#0f380f" stroke="#5BC0BE" stroke-width="2"/>
+                                <rect x="100" y="50" width="80" height="80" fill="#222" stroke="#555"/> <!-- CPU Socket -->
+                                <rect x="200" y="40" width="15" height="120" fill="#111" stroke="#444"/> <!-- RAM Slot 1 -->
+                                <rect x="225" y="40" width="15" height="120" fill="#111" stroke="#444"/> <!-- RAM Slot 2 -->
+                            </svg>
+                        </div>
+
+                        <!-- Parts to assemble (Scattered initially, Responsive positioning) -->
+                        <div id="part-cpu" onclick="handleAssembleClick('cpu')" class="absolute bottom-[6%] left-[6%] w-[12.5%] h-[12.5%] cursor-pointer hover:scale-110 transition-all duration-700 ease-in-out z-20 shadow-[0_0_15px_#7B2CBF]">
+                            <svg viewBox="0 0 50 50" class="w-full h-full"><rect width="50" height="50" fill="#ddd" stroke="#999" stroke-width="2" rx="2"/><rect x="10" y="10" width="30" height="30" fill="#7B2CBF"/><text x="25" y="28" font-size="10" fill="white" text-anchor="middle" font-weight="bold">CPU</text></svg>
+                        </div>
+
+                        <div id="part-ram" onclick="handleAssembleClick('ram')" class="absolute top-[6%] right-[6%] w-[3.75%] h-[25%] cursor-pointer hover:scale-110 transition-all duration-700 ease-in-out z-20 shadow-[0_0_15px_#2E7D32]">
+                            <svg viewBox="0 0 15 100" class="w-full h-full"><rect width="15" height="100" fill="#2E7D32"/><rect x="2" y="10" width="11" height="15" fill="#111"/><rect x="2" y="35" width="11" height="15" fill="#111"/><rect x="2" y="60" width="11" height="15" fill="#111"/><rect x="0" y="90" width="15" height="10" fill="#FFD700"/></svg>
+                        </div>
+
+                        <div id="part-ssd" onclick="handleAssembleClick('ssd')" class="absolute bottom-[10%] right-[10%] w-[17.5%] h-[25%] cursor-pointer hover:scale-110 transition-all duration-700 ease-in-out z-20 shadow-[0_0_15px_#5BC0BE]">
+                            <svg viewBox="0 0 80 120" class="w-full h-full"><rect width="80" height="120" fill="#333" rx="5" stroke="#555"/><rect x="10" y="10" width="60" height="30" fill="#444"/><text x="40" y="30" font-size="12" fill="#5BC0BE" text-anchor="middle" font-weight="bold">SSD</text><circle cx="40" cy="80" r="20" fill="none" stroke="#555" stroke-width="2"/></svg>
+                        </div>
+
+                        <div id="part-psu" onclick="handleAssembleClick('psu')" class="absolute top-[50%] left-[4%] w-[22.5%] h-[17.5%] cursor-pointer hover:scale-110 transition-all duration-700 ease-in-out z-20 shadow-[0_0_15px_red]">
+                            <svg viewBox="0 0 100 80" class="w-full h-full"><rect width="100" height="80" fill="#222" stroke="#444" stroke-width="2"/><circle cx="50" cy="40" r="30" fill="#111"/><path d="M 50 40 L 50 10 M 50 40 L 80 55 M 50 40 L 20 55" stroke="#333" stroke-width="4"/><text x="15" y="15" font-size="8" fill="red">PSU</text></svg>
+                        </div>
+                    </div>
+                `;
+                inter.innerHTML = html;
+            }
+            else if (game.type === 'crossword') {
+                document.getElementById('gp-type').innerText = 'Teka-Teki Silang';
+                let html = `<div class="flex flex-col md:flex-row gap-6 w-full">`;
+
+                // Clues Section
+                html += `<div class="flex-1 bg-darkblue p-4 rounded-xl border border-electric">
+                    <h4 class="font-bold text-emerald mb-3">Petunjuk:</h4>
+                    <ul class="text-sm space-y-3">`;
+                game.clues.forEach(c => {
+                    html += `<li><span class="font-bold text-gold">${c.num} ${c.dir}:</span> <span class="text-gray-300">${c.text}</span></li>`;
+                });
+                html += `</ul></div>`;
+
+                // Grid Section
+                html += `<div class="flex-1 flex justify-center items-center bg-navy p-6 rounded-xl border border-purple shadow-inner overflow-x-auto">
+                    <div class="relative mx-auto" style="display: grid; grid-template-columns: repeat(${game.grid.width}, 3rem); gap: 0.25rem;">`;
+
+                for (let y = 0; y < game.grid.height; y++) {
+                    for (let x = 0; x < game.grid.width; x++) {
+                        const cell = game.cells.find(c => c.x === x && c.y === y);
+                        if (cell) {
+                            html += `<div class="relative w-12 h-12">
+                                ${cell.num ? `<span class="absolute top-0.5 left-1 text-[9px] font-bold text-gray-500 z-10 pointer-events-none">${cell.num}</span>` : ''}
+                                <input type="text" id="tts-${x}-${y}" maxlength="1" oninput="this.value = this.value.toUpperCase()" class="w-full h-full bg-[#1a1a2e] border-2 border-cyan text-center font-bold text-2xl uppercase focus:bg-electric focus:outline-none focus:border-emerald focus:shadow-[0_0_10px_#5BC0BE] rounded-md text-white transition">
+                            </div>`;
+                        } else {
+                            html += `<div class="w-12 h-12 bg-transparent"></div>`;
+                        }
+                    }
+                }
+                html += `</div></div></div>
+                <button onclick="checkCrossword()" class="glass-button w-full mt-6 py-4 rounded-lg font-bold text-lg tracking-wider">CEK JAWABAN TTS</button>`;
+
+                inter.innerHTML = html;
+            }
+        }
+
+        function showGameFeedback(isCorrect, msg, nextLogic) {
+            const fb = document.getElementById('gp-feedback');
+            fb.classList.remove('hidden');
+            if(isCorrect) {
+                playSound('correct');
+                fb.className = 'mt-6 text-center font-bold text-lg p-4 rounded-lg bg-emerald/20 text-emerald border border-emerald slide-in';
+                fb.innerHTML = `✅ ${msg}`;
+                
+                const gameId = gamesData[tempState.currentGameIndex].id;
+                if(!appState.gamesDone.includes(gameId)) {
+                    appState.gamesDone.push(gameId);
+                    appState.points += 20;
+                    appState.stars += 1;
+                    saveState();
+                }
+                
+                setTimeout(() => {
+                    if(appState.gamesDone.length === gamesData.length) {
+                        showGlobalModal("🏆 Semua Misi Selesai!", "Hebat! Kamu telah menaklukkan semua tantangan. Menu <b>BERLATIH</b> (Evaluasi) kini telah terbuka.");
+                        nav('dashboard');
+                    } else {
+                        renderGamesSelection();
+                    }
+                }, 2000);
+
+            } else {
+                playSound('wrong');
+                fb.className = 'mt-6 text-center font-bold text-lg p-4 rounded-lg bg-red-900/40 text-red-400 border border-red-500 slide-in';
+                fb.innerHTML = `❌ ${msg}`;
+            }
+        }
+
+        // Game Mechanics
+        function checkGameMCQ(gIdx, oIdx) {
+            const game = gamesData[gIdx];
+            if(oIdx === game.ans) {
+                showGameFeedback(true, "Jawaban Benar! Analisis yang sangat baik.");
+            } else {
+                showGameFeedback(false, "Kurang tepat. Coba perhatikan kembali fungsinya.");
+            }
+        }
+
+        function selectMatch(side, id) {
+            playSound('click');
+            const state = tempState.gameMechanicState;
+            
+            if(side === 'left') {
+                // visual reset lefts
+                document.querySelectorAll('#match-left button').forEach(b => { if(!b.disabled) b.classList.replace('bg-cyan/40', 'bg-navy'); });
+                document.getElementById(`l-${id}`).classList.replace('bg-navy', 'bg-cyan/40');
+                state.selectedLeft = id;
+            } else if (side === 'right' && state.selectedLeft !== null) {
+                if (state.selectedLeft === id) {
+                    // Match!
+                    playSound('correct');
+                    const btnL = document.getElementById(`l-${id}`);
+                    const btnR = document.getElementById(`r-${id}`);
+                    btnL.className = 'w-full bg-emerald/50 border-2 border-emerald p-4 rounded text-center font-bold text-white';
+                    btnL.disabled = true;
+                    btnR.className = 'w-full bg-emerald/50 border-2 border-emerald p-4 rounded text-center font-bold text-white';
+                    btnR.disabled = true;
+                    state.selectedLeft = null;
+                    state.matched++;
+                    if(state.matched === state.total) {
+                        showGameFeedback(true, "Semua pasangan tepat!");
+                    }
+                } else {
+                    playSound('wrong');
+                    // Reset left selection visually
+                    document.getElementById(`l-${state.selectedLeft}`).classList.replace('bg-cyan/40', 'bg-navy');
+                    state.selectedLeft = null;
+                }
+            }
+        }
+
+        function selectOrder(id) {
+            const state = tempState.gameMechanicState;
+            if(id === state.currentStep) {
+                playSound('click');
+                const btn = document.getElementById(`ord-${id}`);
+                btn.classList.replace('bg-navy', 'bg-emerald/30');
+                btn.classList.replace('border-electric', 'border-emerald');
+                btn.querySelector('.order-num').innerText = state.currentStep + 1;
+                btn.querySelector('.order-num').classList.replace('bg-darkblue', 'bg-emerald');
+                btn.querySelector('.order-num').classList.add('text-navy');
+                btn.disabled = true;
+                
+                state.currentStep++;
+                if(state.currentStep === state.total) {
+                    showGameFeedback(true, "Urutan proses data sangat akurat!");
+                }
+            } else {
+                playSound('wrong');
+                // visual shake
+                const btn = document.getElementById(`ord-${id}`);
+                btn.classList.add('translate-x-2');
+                setTimeout(()=>btn.classList.remove('translate-x-2'), 200);
+            }
+        }
+
+        function handleAssembleClick(partId) {
+            const state = tempState.gameMechanicState;
+            const currentTask = state.tasks[state.currentStep];
+            
+            if(partId === currentTask.id) {
+                playSound('correct');
+                const partEl = document.getElementById(`part-${partId}`);
+                partEl.style.cursor = 'default';
+                partEl.onclick = null;
+                partEl.classList.remove('hover:scale-110');
+                
+                // Move to predefined target coordinates relative to the container using percentages (Responsive)
+                if (partId === 'cpu') {
+                    partEl.style.left = '31.5%';
+                    partEl.style.top = '20.75%';
+                    partEl.style.transform = 'scale(1.2)';
+                } else if (partId === 'ram') {
+                    partEl.style.left = '52.75%';
+                    partEl.style.top = '18.5%';
+                    partEl.style.transform = 'scale(1)';
+                } else if (partId === 'psu') {
+                    partEl.style.left = '70%';
+                    partEl.style.top = '7.5%';
+                    partEl.style.transform = 'scale(1)';
+                } else if (partId === 'ssd') {
+                    partEl.style.left = '70%';
+                    partEl.style.top = '67.5%';
+                    partEl.style.transform = 'scale(1)';
+                }
+                
+                state.currentStep++;
+                if(state.currentStep < state.tasks.length) {
+                    document.getElementById('assemble-prompt-box').innerText = state.tasks[state.currentStep].prompt;
+                } else {
+                    document.getElementById('assemble-prompt-box').innerText = "🎉 Perakitan Selesai!";
+                    document.getElementById('slot-mobo').classList.replace('opacity-60', 'opacity-100');
+                    setTimeout(() => showGameFeedback(true, "Luar biasa! Kamu berhasil merakit komputer dengan sempurna!"), 1000);
+                }
+            } else {
+                playSound('wrong');
+                const partEl = document.getElementById(`part-${partId}`);
+                partEl.classList.add('shadow-[0_0_30px_red]');
+                setTimeout(() => partEl.classList.remove('shadow-[0_0_30px_red]'), 500);
+            }
+        }
+
+        function checkCrossword() {
+            playSound('click');
+            const game = gamesData[tempState.currentGameIndex];
+            let allCorrect = true;
+            let allFilled = true;
+
+            game.cells.forEach(c => {
+                const input = document.getElementById(`tts-${c.x}-${c.y}`);
+                if (input) {
+                    if (!input.value) {
+                        allFilled = false;
+                    } else if (input.value.toUpperCase() !== c.a) {
+                        allCorrect = false;
+                        input.classList.replace('border-cyan', 'border-red-500');
+                        input.classList.add('bg-red-900/50');
+                        setTimeout(() => {
+                            input.classList.replace('border-red-500', 'border-cyan');
+                            input.classList.remove('bg-red-900/50');
+                        }, 1500);
+                    } else {
+                        input.classList.replace('border-cyan', 'border-emerald');
+                        input.classList.add('bg-emerald/20', 'text-emerald');
+                    }
+                }
+            });
+
+            if (!allFilled) {
+                showGameFeedback(false, "Kamu belum mengisi semua kotak kosong. Ayo coba lengkapi!");
+            } else if (!allCorrect) {
+                showGameFeedback(false, "Masih ada kata yang kurang tepat. Periksa kembali huruf pada kotak yang berkedip merah!");
+            } else {
+                game.cells.forEach(c => {
+                    const input = document.getElementById(`tts-${c.x}-${c.y}`);
+                    if(input) input.disabled = true; // Lock inputs on success
+                });
+                showGameFeedback(true, "Hebat! Kamu berhasil memecahkan Teka-Teki Silang ini dengan sempurna!");
+            }
+        }
+
+        // --- MENU BERLATIH (QUIZ) --- //
+        function startQuiz() {
+            showConfirmModal(
+                "Mulai Evaluasi", 
+                "Waktu tidak dibatasi, namun kerjakan dengan sungguh-sungguh. Mulai sekarang?", 
+                () => {
+                    document.getElementById('quiz-intro').classList.add('hidden');
+                    document.getElementById('quiz-play-area').classList.remove('hidden');
+                    
+                    tempState.currentQuizIndex = 0;
+                    appState.quizDetail = { score: 0, correct: 0, l1:0, l2:0, l3:0 };
+                    renderQuizQuestion();
+                }
+            );
+        }
+
+        function renderQuizQuestion() {
+            const idx = tempState.currentQuizIndex;
+            const qData = quizData[idx];
+            
+            document.getElementById('quiz-progress-text').innerText = `${idx+1}/10`;
+            document.getElementById('qz-bar').style.width = `${((idx+1)/10)*100}%`;
+            
+            let lvlStr = qData.lvl === 1 ? 'Dasar' : (qData.lvl === 2 ? 'Sedang' : 'HOTS');
+            let bgLvl = qData.lvl === 1 ? 'bg-cyan text-navy' : (qData.lvl === 2 ? 'bg-gold text-navy' : 'bg-red-500 text-white');
+            
+            document.getElementById('qz-level').innerText = `Level ${lvlStr}`;
+            document.getElementById('qz-level').className = `px-3 py-1 rounded text-xs font-bold ${bgLvl}`;
+            document.getElementById('qz-points').innerText = `Bobot: ${qData.w} Poin`;
+            
+            document.getElementById('qz-stimulus').innerText = qData.s;
+            document.getElementById('qz-question').innerText = qData.q;
+            
+            const optCont = document.getElementById('qz-options');
+            optCont.innerHTML = '';
+            
+            qData.o.forEach((opt, oIdx) => {
+                optCont.innerHTML += `<button onclick="answerQuiz(${oIdx})" class="text-left p-4 bg-navy border border-electric rounded hover:border-purple hover:bg-purple/10 transition block w-full flex gap-3"><span class="font-bold text-gray-400">${String.fromCharCode(65+oIdx)}.</span> <span>${opt}</span></button>`;
+            });
+        }
+
+        function answerQuiz(selectedIdx) {
+            playSound('click');
+            const qData = quizData[tempState.currentQuizIndex];
+            if(selectedIdx === qData.a) {
+                appState.quizDetail.score += qData.w;
+                appState.quizDetail.correct++;
+                if(qData.lvl === 1) appState.quizDetail.l1++;
+                if(qData.lvl === 2) appState.quizDetail.l2++;
+                if(qData.lvl === 3) appState.quizDetail.l3++;
+            }
+            
+            tempState.currentQuizIndex++;
+            if (tempState.currentQuizIndex < quizData.length) {
+                renderQuizQuestion();
+            } else {
+                endQuiz();
+            }
+        }
+
+        function endQuiz() {
+            playSound('correct');
+            document.getElementById('quiz-play-area').classList.add('hidden');
+            const res = document.getElementById('quiz-result');
+            res.classList.remove('hidden');
+            
+            const score = appState.quizDetail.score;
+            appState.quizScore = score;
+            
+            // Animation for score
+            let cur = 0;
+            const scoreEl = document.getElementById('qz-final-score');
+            const circle = document.getElementById('score-circle');
+            
+            const timer = setInterval(() => {
+                cur++;
+                scoreEl.innerText = cur;
+                // circumference = 2 * pi * r = 2 * 3.14 * 88 = 552.64 (~553)
+                const offset = 553 - (553 * (cur / 100));
+                circle.style.strokeDashoffset = offset;
+                
+                if(cur >= score) {
+                    clearInterval(timer);
+                    scoreEl.innerText = score;
+                }
+            }, 20);
+
+            let pred = ''; let msg = '';
+            if(score >= 90) { pred = 'Sangat Baik'; msg = 'Luar biasa! Pemahamanmu tentang Sistem Komputer level master.'; document.getElementById('qz-predikat').className = 'text-2xl font-bold mb-2 text-emerald'; circle.style.stroke = '#6FFFE9';}
+            else if (score >= 80) { pred = 'Baik'; msg = 'Kerja bagus! Kamu memahami sebagian besar konsep.'; document.getElementById('qz-predikat').className = 'text-2xl font-bold mb-2 text-cyan'; circle.style.stroke = '#5BC0BE';}
+            else if (score >= 70) { pred = 'Cukup'; msg = 'Pemahamanmu cukup baik, tapi perbanyak lagi membaca materi.'; document.getElementById('qz-predikat').className = 'text-2xl font-bold mb-2 text-gold'; circle.style.stroke = '#FFD700';}
+            else { pred = 'Perlu Bimbingan'; msg = 'Jangan menyerah! Baca ulang materi dan coba lagi nanti.'; document.getElementById('qz-predikat').className = 'text-2xl font-bold mb-2 text-red-400'; circle.style.stroke = '#F87171';}
+            
+            document.getElementById('qz-predikat').innerText = pred;
+            document.getElementById('qz-feedback-msg').innerText = msg;
+            
+            appState.quizDetail.pred = pred;
+            saveState(); // Save state
+
+            // TRIGGER PENGIRIMAN DATA KE GOOGLE SHEETS
+            sendDataToSheets();
+        }
+
+        function confirmExitAssessment() {
+            if(appState.quizScore !== null) {
+                playSound('click');
+                nav('dashboard'); // if done, just exit
+            } else {
+                showConfirmModal(
+                    "Keluar Evaluasi",
+                    "Yakin ingin keluar? Progres evaluasi yang sedang berjalan akan hilang.",
+                    () => {
+                        nav('dashboard');
+                    }
+                );
+            }
+        }
+
+        function finishAssessment() {
+            nav('report');
+        }
+
+        // --- REPORT & PDF --- //
+        function prepareReportData() {
+            if(!appState.name) return;
+            const d = new Date();
+            document.getElementById('rep-date').innerText = d.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('rep-name').innerText = appState.name;
+            document.getElementById('rep-class').innerText = appState.class;
+            
+            const modList = document.getElementById('rep-modules');
+            modList.innerHTML = '';
+            modulesData.forEach(m => {
+                modList.innerHTML += `<li>${m.title} - <span class="${appState.modulesDone.includes(m.id) ? 'text-green-600 font-bold' : 'text-red-500'}">${appState.modulesDone.includes(m.id) ? 'Selesai' : 'Belum'}</span></li>`;
+            });
+
+            document.getElementById('rep-games-done').innerText = `${appState.gamesDone.length}/${gamesData.length}`;
+            // Simplify accuracy representation for single file
+            document.getElementById('rep-games-acc').innerText = appState.gamesDone.length === gamesData.length ? '100%' : 'Sedang Berjalan';
+
+            document.getElementById('rep-score').innerText = appState.quizScore || 0;
+            document.getElementById('rep-pred').innerText = appState.quizDetail?.pred || '-';
+            
+            // max l1=3, l2=4, l3=3
+            document.getElementById('rep-l1').innerText = `${appState.quizDetail?.l1 || 0}/3`;
+            document.getElementById('rep-l2').innerText = `${appState.quizDetail?.l2 || 0}/4`;
+            document.getElementById('rep-l3').innerText = `${appState.quizDetail?.l3 || 0}/3`;
+        }
+
+        function downloadPDF() {
+            playSound('click');
+            prepareReportData();
+            const element = document.getElementById('report-container');
+            element.classList.remove('hidden', 'absolute');
+            
+            const opt = {
+                margin:       10,
+                filename:     `Laporan_Informatika_${appState.name.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            showGlobalModal("Memproses PDF", "Mohon tunggu sebentar, dokumen sedang dibuat...");
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.classList.add('hidden', 'absolute');
+                closeGlobalModal();
+            }).catch(err => {
+                console.error(err);
+                closeGlobalModal();
+                showGlobalModal("Perhatian", "Gagal membuat PDF. Fitur Print bawaan browser akan digunakan otomatis.");
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => element.classList.add('hidden', 'absolute'), 1000);
+                }, 1500);
+            });
+        }
+
+        // Before navigate to report screen, prepare data
+        const originalNav = nav;
+        nav = function(screenId) {
+            if(screenId === 'report') prepareReportData();
+            originalNav(screenId);
+        }
+
+    </script>
+</body>
+</html>
